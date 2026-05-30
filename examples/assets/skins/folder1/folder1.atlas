@@ -3,6 +3,8 @@ size:64,64
 big_demon
 bounds:2,20,32,36
 button_blue_btn
+bounds:36,22,16,16
+button_red_up
 bounds:36,40,16,16
 chest_full_open
 bounds:2,2,16,16

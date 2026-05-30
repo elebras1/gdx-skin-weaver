@@ -1,6 +1,4 @@
 folder2.png
-size:512,512
-courier
-bounds:2,2,256,256
+size:32,32
 doc
-bounds:260,235,16,23
+bounds:2,2,16,23

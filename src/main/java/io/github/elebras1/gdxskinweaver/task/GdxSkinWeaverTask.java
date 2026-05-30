@@ -104,17 +104,17 @@ public abstract class GdxSkinWeaverTask extends DefaultTask {
         File targetSkin = new File(targetDir, sourceDir.getName() + "_skin.json");
 
         if (existingSkin != null && existingSkin.exists()) {
-            try {
-                Files.copy(existingSkin.toPath(), targetSkin.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            } catch (IOException e) {
-                System.err.println("Failed to copy skin: " + e.getMessage());
+            if (fonts.isEmpty()) {
+                this.skinDAO.write(existingSkin, targetSkin);
+            } else {
+                this.skinDAO.merge(targetSkin, existingSkin, fonts);
             }
-            return;
-        }
-        if (fonts.isEmpty()) {
-            this.skinDAO.write(targetSkin);
         } else {
-            this.skinDAO.write(targetSkin, fonts);
+            if (fonts.isEmpty()) {
+                this.skinDAO.write(targetSkin);
+            } else {
+                this.skinDAO.write(targetSkin, fonts);
+            }
         }
     }
 }

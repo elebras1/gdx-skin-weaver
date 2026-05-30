@@ -13,6 +13,7 @@ repositories {
 
 dependencies {
     implementation("com.github.tommyettinger:libgdx-texturepacker:1.14.0.0")
+    implementation("com.eclipsesource.minimal-json:minimal-json:0.9.5")
 }
 
 gradlePlugin {

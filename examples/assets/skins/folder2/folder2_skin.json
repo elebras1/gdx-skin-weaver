@@ -1,4 +1,12 @@
 {
+  "com.badlogic.gdx.graphics.Color": {
+    "blue": {
+      "r": 0.27450982,
+      "g": 0.9019608,
+      "b": 0.9411765,
+      "a": 1
+    }
+  },
   "com.badlogic.gdx.graphics.g2d.BitmapFont": {
     "courier": {
       "file": "courier.fnt",
