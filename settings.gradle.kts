@@ -1,2 +1,3 @@
 rootProject.name = "GdxSkinWeaver"
-include("examples")
+
+includeBuild("examples")

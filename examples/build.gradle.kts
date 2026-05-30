@@ -1,5 +1,5 @@
 plugins {
-    id("java")
+    id("io.github.elebras1.gdxskinweaver")
 }
 
 group = "io.github.elebras1"
@@ -10,11 +10,10 @@ repositories {
 }
 
 dependencies {
-    testImplementation(platform("org.junit:junit-bom:6.0.0"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
-tasks.test {
-    useJUnitPlatform()
+extensions.configure<io.github.elebras1.gdxskinweaver.SkinWeaverExtension>("skinWeaver") {
+    assetsDir.set(layout.projectDirectory.dir("assets"))
+    outputDir.set(layout.projectDirectory.dir("assets/skins"))
+    excludedDirs.set(listOf("folder2/folder4"))
 }
