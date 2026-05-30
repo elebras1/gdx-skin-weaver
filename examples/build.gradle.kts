@@ -1,3 +1,5 @@
+import io.github.elebras1.gdxskinweaver.SkinWeaverExtension
+
 plugins {
     id("io.github.elebras1.gdxskinweaver")
 }
@@ -12,7 +14,7 @@ repositories {
 dependencies {
 }
 
-extensions.configure<io.github.elebras1.gdxskinweaver.SkinWeaverExtension>("skinWeaver") {
+extensions.configure<SkinWeaverExtension>("skinWeaver") {
     assetsDir.set(layout.projectDirectory.dir("assets"))
     outputDir.set(layout.projectDirectory.dir("assets/skins"))
     excludedDirs.set(listOf("folder2/folder4"))

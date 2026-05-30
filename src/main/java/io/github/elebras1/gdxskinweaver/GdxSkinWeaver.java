@@ -1,5 +1,6 @@
 package io.github.elebras1.gdxskinweaver;
 
+import io.github.elebras1.gdxskinweaver.task.GdxSkinWeaverTask;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskProvider;
