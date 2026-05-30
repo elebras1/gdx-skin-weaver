@@ -1,7 +1,6 @@
 package io.github.elebras1.gdxskinweaver.dao;
 
 import com.badlogic.gdx.tools.texturepacker.TexturePacker;
-
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
@@ -16,7 +15,19 @@ public class TexturePackerDAO {
         if (atlasName.isEmpty()) {
             atlasName = "pack";
         }
+        pack(sourceDir, targetDir, atlasName, images);
+    }
 
+    public void pack(File sourceDir, File targetDir, String atlasName, List<File> images) {
+        TexturePacker.Settings settings = createSettings();
+        TexturePacker packer = new TexturePacker(sourceDir, settings);
+        for (File img : images) {
+            packer.addImage(img);
+        }
+        packer.pack(targetDir, atlasName);
+    }
+
+    private TexturePacker.Settings createSettings() {
         TexturePacker.Settings settings = new TexturePacker.Settings();
         settings.pot = true;
         settings.paddingX = 2;
@@ -24,12 +35,9 @@ public class TexturePackerDAO {
         settings.edgePadding = true;
         settings.maxWidth = 2048;
         settings.maxHeight = 2048;
-        settings.combineSubdirectories = false; //todo reflechir a l'ajout d'une option pour l'utilisateur
-
-        TexturePacker packer = new TexturePacker(sourceDir, settings);
-        for (File img : images) {
-            packer.addImage(img);
-        }
-        packer.pack(targetDir, atlasName);
+        settings.flattenPaths = true;
+        settings.combineSubdirectories = false;
+        settings.legacyOutput = false;
+        return settings;
     }
 }

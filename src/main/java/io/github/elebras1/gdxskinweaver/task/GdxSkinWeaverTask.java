@@ -1,5 +1,6 @@
 package io.github.elebras1.gdxskinweaver.task;
 
+import io.github.elebras1.gdxskinweaver.staging.StagingPreparer;
 import io.github.elebras1.gdxskinweaver.util.FileUtils;
 import io.github.elebras1.gdxskinweaver.dao.SkinDAO;
 import io.github.elebras1.gdxskinweaver.dao.TexturePackerDAO;
@@ -29,9 +30,12 @@ public abstract class GdxSkinWeaverTask extends DefaultTask {
 
     private final SkinDAO skinDAO;
 
+    private final StagingPreparer stagingPreparer;
+
     public GdxSkinWeaverTask() {
         this.texturePackerDAO = new TexturePackerDAO();
         this.skinDAO = new SkinDAO();
+        this.stagingPreparer = new StagingPreparer();
     }
 
     @TaskAction
@@ -52,38 +56,41 @@ public abstract class GdxSkinWeaverTask extends DefaultTask {
         File[] files = dir.listFiles();
         if (files == null) return;
 
-        List<File> images = new ArrayList<>();
         List<File> fonts = new ArrayList<>();
         File existingSkin = null;
 
         for (File file : files) {
             String relativePath = assetsRoot.relativize(file.toPath()).toString();
-
             if (file.isDirectory()) {
                 if (!excludedDirs.contains(relativePath)) {
-                    this.processWeave(file, outputDir, excludedDirs, assetsRoot);
+                    processWeave(file, outputDir, excludedDirs, assetsRoot);
                 }
                 continue;
             }
-
-            if (FileUtils.isImage(file)) {
-                images.add(file);
-            } else if (FileUtils.isFont(file)) {
+            if (FileUtils.isFont(file)) {
                 fonts.add(file);
-            } else if (FileUtils.isSkin(file)) {
+            }
+            else if (FileUtils.isSkin(file)) {
                 existingSkin = file;
             }
         }
 
-        if (!images.isEmpty()) {
-            this.texturePackerDAO.pack(dir, outputDir, assetsRoot, images);
-        }
+        File[] images = dir.listFiles(FileUtils::isImage);
+        if (images != null && images.length > 0) {
+            StagingPreparer.StagingResult staging = stagingPreparer.prepare(dir, getTemporaryDir(), assetsRoot);
 
-        if (!fonts.isEmpty()) {
-            this.copyFontsToOutput(dir, outputDir, assetsRoot, fonts);
-        }
+            if (!staging.images().isEmpty()) {
+                Path relativePath = assetsRoot.relativize(dir.toPath());
+                File targetDir = outputDir.toPath().resolve(relativePath).toFile();
+                String atlasName = dir.getName().isEmpty() ? "pack" : dir.getName();
+                texturePackerDAO.pack(getTemporaryDir(), targetDir, atlasName, staging.images());
+            }
 
-        this.handleSkinFile(dir, outputDir, assetsRoot, existingSkin, fonts);
+            this.handleSkinFile(dir, outputDir, assetsRoot, existingSkin, fonts, staging.buttonSimpleToFull());
+        } else {
+            if (!fonts.isEmpty()) copyFontsToOutput(dir, outputDir, assetsRoot, fonts);
+            this.handleSkinFile(dir, outputDir, assetsRoot, existingSkin, fonts, Map.of());
+        }
     }
 
     private void copyFontsToOutput(File sourceDir, File outputRoot, Path assetsRoot, List<File> fonts) {
@@ -99,21 +106,25 @@ public abstract class GdxSkinWeaverTask extends DefaultTask {
         }
     }
 
-    private void handleSkinFile(File sourceDir, File outputRoot, Path assetsRoot, File existingSkin, List<File> fonts) {
+    private void handleSkinFile(File sourceDir, File outputRoot, Path assetsRoot, File existingSkin, List<File> fonts, Map<String, String> buttonSimpleToFull) {
         File targetDir = FileUtils.getOutputDirectory(sourceDir, outputRoot, assetsRoot);
         File targetSkin = new File(targetDir, sourceDir.getName() + "_skin.json");
 
         if (existingSkin != null && existingSkin.exists()) {
-            if (fonts.isEmpty()) {
+            if (fonts.isEmpty() && buttonSimpleToFull.isEmpty()) {
                 this.skinDAO.write(existingSkin, targetSkin);
             } else {
-                this.skinDAO.merge(targetSkin, existingSkin, fonts);
+                this.skinDAO.merge(targetSkin, existingSkin, fonts, buttonSimpleToFull);
             }
         } else {
-            if (fonts.isEmpty()) {
+            if (fonts.isEmpty() && buttonSimpleToFull.isEmpty()) {
                 this.skinDAO.write(targetSkin);
-            } else {
+            } else if (fonts.isEmpty()) {
+                this.skinDAO.write(targetSkin, buttonSimpleToFull);
+            } else if (buttonSimpleToFull.isEmpty()) {
                 this.skinDAO.write(targetSkin, fonts);
+            } else {
+                this.skinDAO.write(targetSkin, fonts, buttonSimpleToFull);
             }
         }
     }

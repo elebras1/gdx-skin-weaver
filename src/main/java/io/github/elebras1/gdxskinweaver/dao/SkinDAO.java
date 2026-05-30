@@ -10,6 +10,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class SkinDAO {
 
@@ -82,6 +84,90 @@ public class SkinDAO {
         }
 
         this.saveToFile(root, targetSkin);
+    }
+
+    public void write(File targetSkin, Map<String, String> buttonSimpleToFull) {
+        JsonObject root = new JsonObject();
+        this.addButtonStyles(root, buttonSimpleToFull);
+        this.saveToFile(root, targetSkin);
+    }
+
+    public void write(File targetSkin, List<File> fonts, Map<String, String> buttonSimpleToFull) {
+        JsonObject root = new JsonObject();
+        if (!fonts.isEmpty()) {
+            root.add("com.badlogic.gdx.graphics.g2d.BitmapFont", this.createBitmapFontObject(fonts));
+        }
+        this.addButtonStyles(root, buttonSimpleToFull);
+        this.saveToFile(root, targetSkin);
+    }
+
+    public void merge(File targetSkin, File existingSkin, List<File> fonts, Map<String, String> buttonSimpleToFull) {
+        JsonObject root = this.loadExisting(existingSkin);
+        this.mergeFonts(root, fonts);
+        this.addButtonStyles(root, buttonSimpleToFull);
+        this.saveToFile(root, targetSkin);
+    }
+
+    private JsonObject loadExisting(File file) {
+        if (file == null || !file.exists()) return new JsonObject();
+        try (Reader reader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)) {
+            return Json.parse(reader).asObject();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private void mergeFonts(JsonObject root, List<File> fonts) {
+        JsonObject bitmapFont = getOrCreateBitmapFont(root);
+        for (File font : fonts) {
+            String baseName = font.getName().replaceFirst("\\.fnt$", "");
+            if (bitmapFont.get(baseName) != null) continue;
+            bitmapFont.add(baseName, new JsonObject()
+                    .add("file", font.getName())
+                    .add("scaledSize", -1)
+                    .add("markupEnabled", false)
+                    .add("flip", false));
+        }
+    }
+
+    private JsonObject getOrCreateBitmapFont(JsonObject root) {
+        JsonValue val = root.get("com.badlogic.gdx.graphics.g2d.BitmapFont");
+        if (val == null || val.isNull()) {
+            JsonObject obj = new JsonObject();
+            root.add("com.badlogic.gdx.graphics.g2d.BitmapFont", obj);
+            return obj;
+        }
+        return val.asObject();
+    }
+
+    private JsonObject createBitmapFontObject(List<File> fonts) {
+        JsonObject obj = new JsonObject();
+        for (File font : fonts) {
+            String baseName = font.getName().replaceFirst("\\.fnt$", "");
+            obj.add(baseName, new JsonObject()
+                    .add("file", font.getName())
+                    .add("scaledSize", -1)
+                    .add("markupEnabled", false)
+                    .add("flip", false));
+        }
+        return obj;
+    }
+
+    private void addButtonStyles(JsonObject root, Map<String, String> buttonSimpleToFull) {
+        if (buttonSimpleToFull == null || buttonSimpleToFull.isEmpty()) return;
+        String key = "com.badlogic.gdx.scenes.scene2d.ui.Button$ButtonStyle";
+        JsonObject styles = root.get(key) == null ? new JsonObject() : root.get(key).asObject();
+        for (Map.Entry<String, String> entry : buttonSimpleToFull.entrySet()) {
+            String simpleName = entry.getKey();
+            String fullRegion = entry.getValue();
+            if (styles.get(simpleName) != null) continue;
+            JsonObject style = new JsonObject()
+                    .add("up", fullRegion)
+                    .add("down", fullRegion + "_down")
+                    .add("over", fullRegion + "_over");
+            styles.add(simpleName, style);
+        }
+        root.add(key, styles);
     }
 
     private void saveToFile(JsonObject object, File target) {
