@@ -44,37 +44,35 @@ nexusPublishing {
 }
 publishing {
     publications {
-        create<MavenPublication>("maven") {
-            groupId = group as String?
-            version = project.version.toString()
-
-            from(components["java"])
-
+        withType<MavenPublication> {
             pom {
                 name.set("GdxSkinWeaver")
                 description.set("Gradle plugin that packs libGDX texture atlases and generates skin JSON from asset folders")
                 url.set("https://github.com/elebras1/gdx-skin-weaver")
-
                 licenses {
                     license {
                         name.set("Apache License")
                         url.set("https://github.com/elebras1/gdx-skin-weaver/blob/main/LICENSE")
                     }
                 }
-
                 developers {
                     developer {
                         id.set("elebras1")
                         name.set("elebras1")
                     }
                 }
-
                 scm {
                     connection.set("scm:git:git://github.com/elebras1/gdx-skin-weaver.git")
                     developerConnection.set("scm:git:ssh://github.com/elebras1/gdx-skin-weaver.git")
                     url.set("https://github.com/elebras1/gdx-skin-weaver")
                 }
             }
+        }
+
+        create<MavenPublication>("maven") {
+            groupId = group as String?
+            version = project.version.toString()
+            from(components["java"])
         }
     }
 }
@@ -84,6 +82,6 @@ configure<SigningExtension> {
     val signingPassword = System.getenv("SIGNING_PASSWORD")
     if (signingKey != null && signingPassword != null) {
         useInMemoryPgpKeys(signingKey, signingPassword)
-        sign(publishing.publications["maven"])
+        sign(publishing.publications)
     }
 }
