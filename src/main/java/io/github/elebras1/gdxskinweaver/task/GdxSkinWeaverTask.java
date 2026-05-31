@@ -1,9 +1,8 @@
 package io.github.elebras1.gdxskinweaver.task;
 
+import io.github.elebras1.gdxskinweaver.assets.FontPageCopier;
 import io.github.elebras1.gdxskinweaver.staging.StagingPreparer;
 import io.github.elebras1.gdxskinweaver.assets.DirectoryScanner;
-import io.github.elebras1.gdxskinweaver.assets.FontPageCopier;
-import io.github.elebras1.gdxskinweaver.assets.FontPageParser;
 import io.github.elebras1.gdxskinweaver.core.WeaveContext;
 import io.github.elebras1.gdxskinweaver.core.WeaveProcessor;
 import io.github.elebras1.gdxskinweaver.service.TexturePackerService;
@@ -30,16 +29,11 @@ public abstract class GdxSkinWeaverTask extends DefaultTask {
     @Input
     public abstract SetProperty<String> getExcludedDirs();
 
-    private final TexturePackerService texturePackerDAO;
-    private final SkinJsonService skinDAO;
-    private final StagingPreparer stagingPreparer;
     private final WeaveProcessor weaveProcessor;
 
     public GdxSkinWeaverTask() {
-        this.texturePackerDAO = new TexturePackerService();
-        this.skinDAO = new SkinJsonService();
-        this.stagingPreparer = new StagingPreparer();
-        this.weaveProcessor = new WeaveProcessor(new DirectoryScanner(), new FontPageParser(), new FontPageCopier(), stagingPreparer, texturePackerDAO, new SkinFileHandler(skinDAO));
+        SkinJsonService skinService = new SkinJsonService();
+        this.weaveProcessor = new WeaveProcessor(new DirectoryScanner(), new StagingPreparer(), new FontPageCopier(),  new TexturePackerService(), new SkinFileHandler(skinService));
     }
 
     @TaskAction

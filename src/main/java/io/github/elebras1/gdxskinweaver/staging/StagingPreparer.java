@@ -12,7 +12,7 @@ import java.util.*;
 public class StagingPreparer {
     private final ImageContrastAdjuster contrastAdjuster = new ImageContrastAdjuster();
 
-    public StagingResult prepare(File sourceDir, File stagingRoot, Path assetsRoot, Set<File> excludeFiles) {
+    public StagingResult prepare(File sourceDir, File stagingRoot, Path assetsRoot) {
         List<File> stagedImages = new ArrayList<>();
         Map<String, String> buttonSimpleToFull = new HashMap<>();
         Map<String, String> toggleSimpleToFull = new HashMap<>();
@@ -21,10 +21,6 @@ public class StagingPreparer {
         if (images == null) return new StagingResult(stagedImages, buttonSimpleToFull, toggleSimpleToFull);
 
         for (File original : images) {
-            if (excludeFiles != null && excludeFiles.contains(original.getAbsoluteFile())) {
-                continue;
-            }
-
             String fileName = original.getName();
             String simpleName = fileName.replaceFirst("\\.[^.]*$", "");
 

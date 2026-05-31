@@ -11,8 +11,8 @@ import java.util.Map;
 public class SkinFileHandler {
     private final SkinJsonService skinDAO;
 
-    public SkinFileHandler(SkinJsonService skinDAO) {
-        this.skinDAO = skinDAO;
+    public SkinFileHandler(SkinJsonService skinService) {
+        this.skinDAO = skinService;
     }
 
     public void handle(File sourceDir, File outputRoot, Path assetsRoot, File existingSkin, List<File> fonts, Map<String, String> buttonSimpleToFull, Map<String, String> toggleSimpleToFull) {
@@ -27,11 +27,7 @@ public class SkinFileHandler {
         writeNew(targetSkin, fonts, buttonSimpleToFull, toggleSimpleToFull);
     }
 
-    private void writeWithExisting(File existingSkin,
-                                   File targetSkin,
-                                   List<File> fonts,
-                                   Map<String, String> buttonSimpleToFull,
-                                   Map<String, String> toggleSimpleToFull) {
+    private void writeWithExisting(File existingSkin, File targetSkin, List<File> fonts, Map<String, String> buttonSimpleToFull, Map<String, String> toggleSimpleToFull) {
         if (fonts.isEmpty() && buttonSimpleToFull.isEmpty() && toggleSimpleToFull.isEmpty()) {
             skinDAO.write(existingSkin, targetSkin);
             return;
@@ -39,10 +35,7 @@ public class SkinFileHandler {
         skinDAO.merge(targetSkin, existingSkin, fonts, buttonSimpleToFull, toggleSimpleToFull);
     }
 
-    private void writeNew(File targetSkin,
-                          List<File> fonts,
-                          Map<String, String> buttonSimpleToFull,
-                          Map<String, String> toggleSimpleToFull) {
+    private void writeNew(File targetSkin, List<File> fonts, Map<String, String> buttonSimpleToFull, Map<String, String> toggleSimpleToFull) {
         if (fonts.isEmpty() && buttonSimpleToFull.isEmpty() && toggleSimpleToFull.isEmpty()) {
             skinDAO.write(targetSkin);
             return;

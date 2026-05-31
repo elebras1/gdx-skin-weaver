@@ -12,17 +12,12 @@ import java.util.Set;
 
 public class FontPageCopier {
 
-    public void copy(File sourceDir, File outputRoot, Path assetsRoot, List<File> fonts, Set<File> fontPageImages) {
+    public void copy(File sourceDir, File outputRoot, Path assetsRoot, List<File> fonts) {
         File targetDir = AssetFileUtils.getOutputDirectory(sourceDir, outputRoot, assetsRoot);
 
         for (File font : fonts) {
             File targetFile = new File(targetDir, font.getName());
             copyFile(font, targetFile, "font");
-        }
-
-        for (File page : fontPageImages) {
-            File targetFile = new File(targetDir, page.getName());
-            copyFile(page, targetFile, "font page");
         }
     }
 

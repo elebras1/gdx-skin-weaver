@@ -3,32 +3,26 @@ package io.github.elebras1.gdxskinweaver.core;
 import io.github.elebras1.gdxskinweaver.assets.DirectoryScanner;
 import io.github.elebras1.gdxskinweaver.assets.DirectorySnapshot;
 import io.github.elebras1.gdxskinweaver.assets.FontPageCopier;
-import io.github.elebras1.gdxskinweaver.assets.FontPageParser;
 import io.github.elebras1.gdxskinweaver.service.TexturePackerService;
 import io.github.elebras1.gdxskinweaver.skin.SkinFileHandler;
 import io.github.elebras1.gdxskinweaver.staging.StagingPreparer;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
-import java.util.Set;
 
 public class WeaveProcessor {
     private final DirectoryScanner directoryScanner;
-    private final FontPageParser fontPageParser;
-    private final FontPageCopier fontPageCopier;
     private final StagingPreparer stagingPreparer;
+    private final FontPageCopier fontPageCopier;
     private final TexturePackerService texturePackerDAO;
     private final SkinFileHandler skinFileHandler;
 
-    public WeaveProcessor(DirectoryScanner directoryScanner, FontPageParser fontPageParser, FontPageCopier fontPageCopier, StagingPreparer stagingPreparer, TexturePackerService texturePackerDAO, SkinFileHandler skinFileHandler) {
+    public WeaveProcessor(DirectoryScanner directoryScanner, StagingPreparer stagingPreparer, FontPageCopier fontPageCopier, TexturePackerService texturePackerService, SkinFileHandler skinFileHandler) {
         this.directoryScanner = directoryScanner;
-        this.fontPageParser = fontPageParser;
-        this.fontPageCopier = fontPageCopier;
         this.stagingPreparer = stagingPreparer;
-        this.texturePackerDAO = texturePackerDAO;
+        this.fontPageCopier = fontPageCopier;
+        this.texturePackerDAO = texturePackerService;
         this.skinFileHandler = skinFileHandler;
     }
 
@@ -40,13 +34,10 @@ public class WeaveProcessor {
         DirectorySnapshot snapshot = directoryScanner.scan(dir);
         processSubdirectories(snapshot, context);
 
-        Set<File> fontPageImages = fontPageParser.parse(snapshot.fonts());
-        List<File> nonFontImages = filterNonFontImages(snapshot.images(), fontPageImages);
+        fontPageCopier.copy(dir, context.outputDir(), context.assetsRoot(), snapshot.fonts());
 
-        fontPageCopier.copy(dir, context.outputDir(), context.assetsRoot(), snapshot.fonts(), fontPageImages);
-
-        if (!nonFontImages.isEmpty()) {
-            StagingPreparer.StagingResult staging = stagingPreparer.prepare(dir, context.temporaryDir(), context.assetsRoot(), fontPageImages);
+        if (!snapshot.images().isEmpty()) {
+            StagingPreparer.StagingResult staging = stagingPreparer.prepare(dir, context.temporaryDir(), context.assetsRoot());
 
             if (!staging.images().isEmpty()) {
                 Path relativePath = context.assetsRoot().relativize(dir.toPath());
@@ -70,15 +61,5 @@ public class WeaveProcessor {
             }
             processDirectory(subdir, context);
         }
-    }
-
-    private List<File> filterNonFontImages(List<File> images, Set<File> fontPageImages) {
-        List<File> nonFontImages = new ArrayList<>();
-        for (File img : images) {
-            if (!fontPageImages.contains(img.getAbsoluteFile())) {
-                nonFontImages.add(img);
-            }
-        }
-        return nonFontImages;
     }
 }
