@@ -3,7 +3,7 @@ package io.github.elebras1.gdxskinweaver.util;
 import java.io.File;
 import java.nio.file.Path;
 
-public class FileUtils {
+public class AssetFileUtils {
 
     public static boolean isImage(File file) {
         String name = file.getName().toLowerCase();
@@ -30,3 +30,4 @@ public class FileUtils {
         return targetDir;
     }
 }
+

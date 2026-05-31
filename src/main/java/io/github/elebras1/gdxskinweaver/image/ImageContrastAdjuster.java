@@ -6,7 +6,7 @@ import java.awt.image.RescaleOp;
 import java.io.File;
 import java.io.IOException;
 
-public class ContrastAdjuster {
+public class ImageContrastAdjuster {
     public void apply(File source, File target, float percent) throws IOException {
         BufferedImage src = ImageIO.read(source);
         if (src == null) throw new IOException("Cannot read: " + source);
@@ -17,3 +17,4 @@ public class ContrastAdjuster {
         ImageIO.write(dst, "png", target);
     }
 }
+

@@ -1,18 +1,24 @@
-package io.github.elebras1.gdxskinweaver.dao;
+package io.github.elebras1.gdxskinweaver.service;
 
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
 import com.eclipsesource.json.WriterConfig;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Map;
 
-public class SkinDAO {
+public class SkinJsonService {
 
     public void write(File existingSkin, File targetSkin) {
         try {
@@ -177,3 +183,4 @@ public class SkinDAO {
         }
     }
 }
+

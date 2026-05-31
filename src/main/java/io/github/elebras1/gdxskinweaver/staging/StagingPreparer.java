@@ -1,7 +1,7 @@
 package io.github.elebras1.gdxskinweaver.staging;
 
-import io.github.elebras1.gdxskinweaver.image.ContrastAdjuster;
-import io.github.elebras1.gdxskinweaver.util.FileUtils;
+import io.github.elebras1.gdxskinweaver.image.ImageContrastAdjuster;
+import io.github.elebras1.gdxskinweaver.util.AssetFileUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -10,14 +10,14 @@ import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 public class StagingPreparer {
-    private final ContrastAdjuster contrastAdjuster = new ContrastAdjuster();
+    private final ImageContrastAdjuster contrastAdjuster = new ImageContrastAdjuster();
 
     public StagingResult prepare(File sourceDir, File stagingRoot, Path assetsRoot, Set<File> excludeFiles) {
         List<File> stagedImages = new ArrayList<>();
         Map<String, String> buttonSimpleToFull = new HashMap<>();
         Map<String, String> toggleSimpleToFull = new HashMap<>();
 
-        File[] images = sourceDir.listFiles(FileUtils::isImage);
+        File[] images = sourceDir.listFiles(AssetFileUtils::isImage);
         if (images == null) return new StagingResult(stagedImages, buttonSimpleToFull, toggleSimpleToFull);
 
         for (File original : images) {

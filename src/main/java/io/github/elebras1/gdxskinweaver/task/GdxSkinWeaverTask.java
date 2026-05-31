@@ -1,19 +1,23 @@
 package io.github.elebras1.gdxskinweaver.task;
 
 import io.github.elebras1.gdxskinweaver.staging.StagingPreparer;
-import io.github.elebras1.gdxskinweaver.util.FileUtils;
-import io.github.elebras1.gdxskinweaver.dao.SkinDAO;
-import io.github.elebras1.gdxskinweaver.dao.TexturePackerDAO;
+import io.github.elebras1.gdxskinweaver.assets.DirectoryScanner;
+import io.github.elebras1.gdxskinweaver.assets.FontPageCopier;
+import io.github.elebras1.gdxskinweaver.assets.FontPageParser;
+import io.github.elebras1.gdxskinweaver.core.WeaveContext;
+import io.github.elebras1.gdxskinweaver.core.WeaveProcessor;
+import io.github.elebras1.gdxskinweaver.service.TexturePackerService;
+import io.github.elebras1.gdxskinweaver.skin.SkinFileHandler;
+import io.github.elebras1.gdxskinweaver.service.SkinJsonService;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.SetProperty;
 import org.gradle.api.tasks.*;
 
-import java.io.*;
-import java.nio.file.Files;
+import java.io.File;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 
 public abstract class GdxSkinWeaverTask extends DefaultTask {
 
@@ -26,14 +30,16 @@ public abstract class GdxSkinWeaverTask extends DefaultTask {
     @Input
     public abstract SetProperty<String> getExcludedDirs();
 
-    private final TexturePackerDAO texturePackerDAO;
-    private final SkinDAO skinDAO;
+    private final TexturePackerService texturePackerDAO;
+    private final SkinJsonService skinDAO;
     private final StagingPreparer stagingPreparer;
+    private final WeaveProcessor weaveProcessor;
 
     public GdxSkinWeaverTask() {
-        this.texturePackerDAO = new TexturePackerDAO();
-        this.skinDAO = new SkinDAO();
+        this.texturePackerDAO = new TexturePackerService();
+        this.skinDAO = new SkinJsonService();
         this.stagingPreparer = new StagingPreparer();
+        this.weaveProcessor = new WeaveProcessor(new DirectoryScanner(), new FontPageParser(), new FontPageCopier(), stagingPreparer, texturePackerDAO, new SkinFileHandler(skinDAO));
     }
 
     @TaskAction
@@ -47,133 +53,7 @@ public abstract class GdxSkinWeaverTask extends DefaultTask {
         Set<String> excludedDirsWithOutput = new HashSet<>(this.getExcludedDirs().get());
         excludedDirsWithOutput.add(relativeOutput);
 
-        this.processWeave(assetsDir, outputDir, excludedDirsWithOutput, assetsRoot);
-    }
-
-    private void processWeave(File dir, File outputDir, Set<String> excludedDirs, Path assetsRoot) {
-        File[] files = dir.listFiles();
-        if (files == null) return;
-
-        List<File> fonts = new ArrayList<>();
-        File existingSkin = null;
-
-        for (File file : files) {
-            String relativePath = assetsRoot.relativize(file.toPath()).toString();
-            if (file.isDirectory()) {
-                if (!excludedDirs.contains(relativePath)) {
-                    processWeave(file, outputDir, excludedDirs, assetsRoot);
-                }
-                continue;
-            }
-            if (FileUtils.isFont(file)) {
-                fonts.add(file);
-            }
-            else if (FileUtils.isSkin(file)) {
-                existingSkin = file;
-            }
-        }
-
-        Set<File> fontPageImages = parseFontPages(fonts);
-
-        File[] allImages = dir.listFiles(FileUtils::isImage);
-        List<File> nonFontImages = new ArrayList<>();
-        if (allImages != null) {
-            for (File img : allImages) {
-                if (!fontPageImages.contains(img.getAbsoluteFile())) {
-                    nonFontImages.add(img);
-                }
-            }
-        }
-
-        copyFontsAndPagesToOutput(dir, outputDir, assetsRoot, fonts, fontPageImages);
-
-        if (!nonFontImages.isEmpty()) {
-            StagingPreparer.StagingResult staging = stagingPreparer.prepare(dir, getTemporaryDir(), assetsRoot, fontPageImages);
-
-            if (!staging.images().isEmpty()) {
-                Path relativePath = assetsRoot.relativize(dir.toPath());
-                File targetDir = outputDir.toPath().resolve(relativePath).toFile();
-                String atlasName = dir.getName().isEmpty() ? "pack" : dir.getName();
-                texturePackerDAO.pack(getTemporaryDir(), targetDir, atlasName, staging.images());
-            }
-
-            this.handleSkinFile(dir, outputDir, assetsRoot, existingSkin, fonts,
-                    staging.buttonSimpleToFull(), staging.toggleSimpleToFull());
-        } else {
-            this.handleSkinFile(dir, outputDir, assetsRoot, existingSkin, fonts,
-                    Map.of(), Map.of());
-        }
-    }
-
-    private Set<File> parseFontPages(List<File> fonts) {
-        Set<File> pages = new HashSet<>();
-        for (File fnt : fonts) {
-            try (BufferedReader reader = new BufferedReader(new FileReader(fnt))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    if (line.startsWith("page")) {
-                        int fileStart = line.indexOf("file=\"");
-                        if (fileStart != -1) {
-                            int start = fileStart + 6;
-                            int end = line.indexOf("\"", start);
-                            if (end != -1) {
-                                String pageName = line.substring(start, end);
-                                File pageFile = new File(fnt.getParent(), pageName);
-                                pages.add(pageFile.getAbsoluteFile());
-                            }
-                        }
-                    }
-                }
-            } catch (IOException e) {
-                throw new UncheckedIOException("Failed to parse font file: " + fnt, e);
-            }
-        }
-        return pages;
-    }
-
-    private void copyFontsAndPagesToOutput(File sourceDir, File outputRoot, Path assetsRoot,
-                                           List<File> fonts, Set<File> fontPageImages) {
-        File targetDir = FileUtils.getOutputDirectory(sourceDir, outputRoot, assetsRoot);
-
-        for (File font : fonts) {
-            File targetFile = new File(targetDir, font.getName());
-            try {
-                Files.copy(font.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            } catch (IOException e) {
-                System.err.println("Failed to copy font " + font.getName() + ": " + e.getMessage());
-            }
-        }
-
-        for (File page : fontPageImages) {
-            File targetFile = new File(targetDir, page.getName());
-            try {
-                Files.copy(page.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            } catch (IOException e) {
-                System.err.println("Failed to copy font page " + page.getName() + ": " + e.getMessage());
-            }
-        }
-    }
-
-    private void handleSkinFile(File sourceDir, File outputRoot, Path assetsRoot, File existingSkin, List<File> fonts, Map<String, String> buttonSimpleToFull, Map<String, String> toggleSimpleToFull) {
-        File targetDir = FileUtils.getOutputDirectory(sourceDir, outputRoot, assetsRoot);
-        File targetSkin = new File(targetDir, sourceDir.getName() + "_skin.json");
-
-        if (existingSkin != null && existingSkin.exists()) {
-            if (fonts.isEmpty() && buttonSimpleToFull.isEmpty() && toggleSimpleToFull.isEmpty()) {
-                this.skinDAO.write(existingSkin, targetSkin);
-            } else {
-                this.skinDAO.merge(targetSkin, existingSkin, fonts, buttonSimpleToFull, toggleSimpleToFull);
-            }
-        } else {
-            if (fonts.isEmpty() && buttonSimpleToFull.isEmpty() && toggleSimpleToFull.isEmpty()) {
-                this.skinDAO.write(targetSkin);
-            } else if (fonts.isEmpty()) {
-                this.skinDAO.write(targetSkin, buttonSimpleToFull, toggleSimpleToFull);
-            } else if (buttonSimpleToFull.isEmpty() && toggleSimpleToFull.isEmpty()) {
-                this.skinDAO.write(targetSkin, fonts);
-            } else {
-                this.skinDAO.write(targetSkin, fonts, buttonSimpleToFull, toggleSimpleToFull);
-            }
-        }
+        WeaveContext context = new WeaveContext(assetsRoot, outputDir, excludedDirsWithOutput, getTemporaryDir());
+        weaveProcessor.process(assetsDir, context);
     }
 }
