@@ -1,7 +1,7 @@
 import io.github.elebras1.gdxskinweaver.SkinWeaverExtension
 
 plugins {
-    id("io.github.elebras1.gdxskinweaver")
+    id("io.github.elebras1.gdx-skin-weaver")
 }
 
 group = "io.github.elebras1"

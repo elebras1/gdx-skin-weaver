@@ -1,4 +1,4 @@
-rootProject.name = "GdxSkinWeaverExamples"
+rootProject.name = "gdx-skin-weaver-examples"
 
 pluginManagement {
     repositories {

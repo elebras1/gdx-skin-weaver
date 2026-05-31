@@ -18,8 +18,8 @@ dependencies {
 
 gradlePlugin {
     plugins {
-        create("gdxskinweaver") {
-            id = "io.github.elebras1.gdxskinweaver"
+        create("gdx-skin-weaver") {
+            id = "io.github.elebras1.gdx-skin-weaver"
             implementationClass = "io.github.elebras1.gdxskinweaver.GdxSkinWeaver"
         }
     }

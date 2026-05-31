@@ -1,0 +1,8 @@
+folder3.png
+size:64,32
+crate_tgl_off
+bounds:20,6,16,24
+crate_tgl_on
+bounds:38,6,16,24
+knight
+bounds:2,2,16,28
