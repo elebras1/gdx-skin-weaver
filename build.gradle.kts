@@ -6,6 +6,11 @@ plugins {
     id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
 }
 
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
+
 group = "io.github.elebras1"
 version = System.getenv("GITHUB_REF_NAME")?.removePrefix("v") ?: project.findProperty("version") as String? ?: "0.1-SNAPSHOT"
 
@@ -30,8 +35,6 @@ gradlePlugin {
 nexusPublishing {
     repositories {
         sonatype {
-            nexusUrl.set(uri("https://ossrh-staging-api.central.sonatype.com/service/local/"))
-            snapshotRepositoryUrl.set(uri("https://central.sonatype.com/repository/maven-snapshots/"))
             username.set(System.getenv("OSSRH_USERNAME"))
             password.set(System.getenv("OSSRH_PASSWORD"))
         }
@@ -42,7 +45,6 @@ publishing {
     publications {
         create<MavenPublication>("maven") {
             groupId = group as String?
-            artifactId = "-java"
             version = project.version.toString()
 
             from(components["java"])
@@ -51,14 +53,6 @@ publishing {
                 name.set("GdxSkinWeaver")
                 description.set("Gradle plugin that packs libGDX texture atlases and generates skin JSON from asset folders")
                 url.set("https://github.com/elebras1/gdx-skin-weaver")
-
-                withXml {
-                    val node = asNode()
-                    val dependenciesNodes = node.get("dependencies") as groovy.util.NodeList
-                    if (dependenciesNodes.isNotEmpty()) {
-                        node.remove(dependenciesNodes[0] as groovy.util.Node)
-                    }
-                }
 
                 licenses {
                     license {
