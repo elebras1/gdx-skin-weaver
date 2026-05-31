@@ -85,3 +85,7 @@ configure<SigningExtension> {
         sign(publishing.publications)
     }
 }
+
+tasks.withType<PublishToMavenRepository>().configureEach {
+    dependsOn(tasks.withType<Sign>())
+}
