@@ -68,12 +68,6 @@ publishing {
                 }
             }
         }
-
-        create<MavenPublication>("maven") {
-            groupId = group as String?
-            version = project.version.toString()
-            from(components["java"])
-        }
     }
 }
 
