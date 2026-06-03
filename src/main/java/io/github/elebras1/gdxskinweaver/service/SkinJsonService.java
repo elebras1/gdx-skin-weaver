@@ -44,27 +44,6 @@ public class SkinJsonService {
         saveToFile(root, targetSkin);
     }
 
-    public void merge(File targetSkin, File existingSkin, List<File> fonts) {
-        JsonObject root = loadExisting(existingSkin);
-        mergeFonts(root, fonts);
-        saveToFile(root, targetSkin);
-    }
-
-    public void write(File targetSkin, Map<String, String> buttonSimpleToFull) {
-        JsonObject root = new JsonObject();
-        addButtonStyles(root, buttonSimpleToFull);
-        saveToFile(root, targetSkin);
-    }
-
-    public void write(File targetSkin, List<File> fonts, Map<String, String> buttonSimpleToFull) {
-        JsonObject root = new JsonObject();
-        if (!fonts.isEmpty()) {
-            root.add("com.badlogic.gdx.graphics.g2d.BitmapFont", createBitmapFontObject(fonts));
-        }
-        addButtonStyles(root, buttonSimpleToFull);
-        saveToFile(root, targetSkin);
-    }
-
     public void write(File targetSkin, Map<String, String> buttonSimpleToFull, Map<String, String> toggleSimpleToFull) {
         JsonObject root = new JsonObject();
         addButtonStyles(root, buttonSimpleToFull);
@@ -82,13 +61,6 @@ public class SkinJsonService {
         saveToFile(root, targetSkin);
     }
 
-    public void merge(File targetSkin, File existingSkin, List<File> fonts, Map<String, String> buttonSimpleToFull) {
-        JsonObject root = loadExisting(existingSkin);
-        mergeFonts(root, fonts);
-        addButtonStyles(root, buttonSimpleToFull);
-        saveToFile(root, targetSkin);
-    }
-
     public void merge(File targetSkin, File existingSkin, List<File> fonts, Map<String, String> buttonSimpleToFull, Map<String, String> toggleSimpleToFull) {
         JsonObject root = loadExisting(existingSkin);
         mergeFonts(root, fonts);
@@ -98,7 +70,9 @@ public class SkinJsonService {
     }
 
     private JsonObject loadExisting(File file) {
-        if (file == null || !file.exists()) return new JsonObject();
+        if (file == null || !file.exists()) {
+            return new JsonObject();
+        }
         try (Reader reader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)) {
             return Json.parse(reader).asObject();
         } catch (IOException e) {
@@ -107,10 +81,15 @@ public class SkinJsonService {
     }
 
     private void mergeFonts(JsonObject root, List<File> fonts) {
+        if(fonts.isEmpty()) {
+            return;
+        }
         JsonObject bitmapFont = getOrCreateBitmapFont(root);
         for (File font : fonts) {
             String baseName = font.getName().replaceFirst("\\.fnt$", "");
-            if (bitmapFont.get(baseName) != null) continue;
+            if (bitmapFont.get(baseName) != null) {
+                continue;
+            }
             bitmapFont.add(baseName, new JsonObject()
                     .add("file", font.getName())
                     .add("scaledSize", -1)
@@ -143,9 +122,17 @@ public class SkinJsonService {
     }
 
     private void addButtonStyles(JsonObject root, Map<String, String> buttonSimpleToFull) {
-        if (buttonSimpleToFull == null || buttonSimpleToFull.isEmpty()) return;
+        if (buttonSimpleToFull == null || buttonSimpleToFull.isEmpty()) {
+            return;
+        }
         String key = "com.badlogic.gdx.scenes.scene2d.ui.Button$ButtonStyle";
-        JsonObject styles = root.get(key) == null ? new JsonObject() : root.get(key).asObject();
+        JsonObject styles;
+        if (root.get(key) == null) {
+            styles = new JsonObject();
+            root.add(key, styles);
+        } else {
+            styles = root.get(key).asObject();
+        }
         for (Map.Entry<String, String> entry : buttonSimpleToFull.entrySet()) {
             String simpleName = entry.getKey();
             String fullRegion = entry.getValue();
@@ -156,13 +143,20 @@ public class SkinJsonService {
                     .add("over", fullRegion + "_over");
             styles.add(simpleName, style);
         }
-        root.add(key, styles);
     }
 
     private void addToggleStyles(JsonObject root, Map<String, String> toggleSimpleToFull) {
-        if (toggleSimpleToFull == null || toggleSimpleToFull.isEmpty()) return;
+        if (toggleSimpleToFull == null || toggleSimpleToFull.isEmpty()) {
+            return;
+        }
         String key = "com.badlogic.gdx.scenes.scene2d.ui.Button$ButtonStyle";
-        JsonObject styles = root.get(key) == null ? new JsonObject() : root.get(key).asObject();
+        JsonObject styles;
+        if (root.get(key) == null) {
+            styles = new JsonObject();
+            root.add(key, styles);
+        } else {
+            styles = root.get(key).asObject();
+        }
         for (Map.Entry<String, String> entry : toggleSimpleToFull.entrySet()) {
             String simpleName = entry.getKey();
             String fullRegion = entry.getValue();
@@ -172,7 +166,6 @@ public class SkinJsonService {
                     .add("checked", fullRegion + "_on");
             styles.add(simpleName, style);
         }
-        root.add(key, styles);
     }
 
     private void saveToFile(JsonObject object, File target) {

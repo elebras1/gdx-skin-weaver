@@ -25,10 +25,16 @@
       "a": 1
     }
   },
-  "com.badlogic.gdx.graphics.g2d.BitmapFont": {
-    
-  },
   "com.badlogic.gdx.scenes.scene2d.ui.Button$ButtonStyle": {
+    "eco_btn": {
+      "up": "folder1/folder3/eco_btn",
+      "down": "folder1/folder3/eco_btn_down",
+      "over": "folder1/folder3/eco_btn_over"
+    },
+    "ac_long_tgl": {
+      "up": "folder1/folder3/ac_long_tgl_off",
+      "checked": "folder1/folder3/ac_long_tgl_on"
+    },
     "crate_tgl": {
       "up": "folder1/folder3/crate_tgl_off",
       "checked": "folder1/folder3/crate_tgl_on"
