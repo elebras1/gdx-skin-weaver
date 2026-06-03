@@ -17,7 +17,7 @@ public class SkinFileHandler {
 
     public void handle(File sourceDir, File outputRoot, Path assetsRoot, File existingSkin, List<File> fonts, Map<String, String> buttonSimpleToFull, Map<String, String> toggleSimpleToFull) {
         File targetDir = AssetFileUtils.getOutputDirectory(sourceDir, outputRoot, assetsRoot);
-        File targetSkin = new File(targetDir, sourceDir.getName() + "_skin.json");
+        File targetSkin = new File(targetDir, sourceDir.getName() + ".json");
 
         if (existingSkin != null && existingSkin.exists()) {
             writeWithExisting(existingSkin, targetSkin, fonts, buttonSimpleToFull, toggleSimpleToFull);

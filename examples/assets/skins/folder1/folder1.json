@@ -1,10 +1,5 @@
 {
   "com.badlogic.gdx.scenes.scene2d.ui.Button$ButtonStyle": {
-    "eco_btn": {
-      "up": "folder1/eco_btn",
-      "down": "folder1/eco_btn_down",
-      "over": "folder1/eco_btn_over"
-    },
     "button_red_btn": {
       "up": "folder1/button_red_btn",
       "down": "folder1/button_red_btn_down",
