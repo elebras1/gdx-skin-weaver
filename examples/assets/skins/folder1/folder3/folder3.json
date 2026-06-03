@@ -27,17 +27,17 @@
   },
   "com.badlogic.gdx.scenes.scene2d.ui.Button$ButtonStyle": {
     "eco_btn": {
-      "up": "folder1/folder3/eco_btn",
-      "down": "folder1/folder3/eco_btn_down",
-      "over": "folder1/folder3/eco_btn_over"
+      "up": "eco_btn",
+      "down": "eco_btn_down",
+      "over": "eco_btn_over"
     },
     "ac_long_tgl": {
-      "up": "folder1/folder3/ac_long_tgl_off",
-      "checked": "folder1/folder3/ac_long_tgl_on"
+      "up": "ac_long_tgl_off",
+      "checked": "ac_long_tgl_on"
     },
     "crate_tgl": {
-      "up": "folder1/folder3/crate_tgl_off",
-      "checked": "folder1/folder3/crate_tgl_on"
+      "up": "crate_tgl_off",
+      "checked": "crate_tgl_on"
     }
   }
 }

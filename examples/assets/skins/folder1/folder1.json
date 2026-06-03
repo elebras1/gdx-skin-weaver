@@ -1,14 +1,14 @@
 {
   "com.badlogic.gdx.scenes.scene2d.ui.Button$ButtonStyle": {
     "button_red_btn": {
-      "up": "folder1/button_red_btn",
-      "down": "folder1/button_red_btn_down",
-      "over": "folder1/button_red_btn_over"
+      "up": "button_red_btn",
+      "down": "button_red_btn_down",
+      "over": "button_red_btn_over"
     },
     "button_blue_btn": {
-      "up": "folder1/button_blue_btn",
-      "down": "folder1/button_blue_btn_down",
-      "over": "folder1/button_blue_btn_over"
+      "up": "button_blue_btn",
+      "down": "button_blue_btn_down",
+      "over": "button_blue_btn_over"
     }
   }
 }

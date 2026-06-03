@@ -40,26 +40,25 @@ public class StagingPreparer {
             File firstFile = parts.values().iterator().next();
             Path rel = assetsRoot.relativize(firstFile.toPath());
             String parent = rel.getParent() == null ? "" : rel.getParent().toString();
-            String fullPrefix = parent.isEmpty() ? prefix : parent + "/" + prefix;
 
             if (parts.containsKey("up") && parts.containsKey("down") && parts.containsKey("over")) {
                 String ext = getExtension(parts.get("up"));
                 copyPart(parts, "up", prefix, parent, ext, stagingRoot, stagedImages);
                 copyPart(parts, "down", prefix, parent, ext, stagingRoot, stagedImages);
                 copyPart(parts, "over", prefix, parent, ext, stagingRoot, stagedImages);
-                buttonStyles.put(prefix, fullPrefix);
+                buttonStyles.put(prefix, prefix);
             } else if (parts.containsKey("on") && parts.containsKey("off")) {
                 String ext = getExtension(parts.get("on"));
                 copyPart(parts, "on", prefix, parent, ext, stagingRoot, stagedImages);
                 copyPart(parts, "off", prefix, parent, ext, stagingRoot, stagedImages);
-                toggleStyles.put(prefix, fullPrefix);
+                toggleStyles.put(prefix, prefix);
             } else if (parts.containsKey("btn")) {
                 File baseFile = parts.get("btn");
                 String ext = getExtension(baseFile);
                 File stagedBase = new File(stagingRoot, parent + "/" + prefix + "_btn" + ext);
                 copyFile(baseFile, stagedBase);
                 stagedImages.add(stagedBase);
-                buttonStyles.put(prefix + "_btn", fullPrefix + "_btn");
+                buttonStyles.put(prefix + "_btn", prefix + "_btn");
 
                 handleOptionalVariant(sourceDir, stagingRoot, baseFile, parent, prefix + "_btn_down", ext, -15f, stagedImages);
                 handleOptionalVariant(sourceDir, stagingRoot, baseFile, parent, prefix + "_btn_over", ext, +15f, stagedImages);
@@ -68,7 +67,7 @@ public class StagingPreparer {
                 String ext = getExtension(baseFile);
                 handleOptionalVariant(sourceDir, stagingRoot, baseFile, parent, prefix + "_tgl_off", ext, 0, stagedImages);
                 handleOptionalVariant(sourceDir, stagingRoot, baseFile, parent, prefix + "_tgl_on", ext, +15f, stagedImages);
-                toggleStyles.put(prefix + "_tgl", fullPrefix + "_tgl");
+                toggleStyles.put(prefix + "_tgl", prefix + "_tgl");
             } else {
                 for (File f : parts.values()) {
                     Path fRel = assetsRoot.relativize(f.toPath());
