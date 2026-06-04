@@ -34,10 +34,10 @@ public class WeaveProcessor {
         DirectorySnapshot snapshot = directoryScanner.scan(dir);
         processSubdirectories(snapshot, context);
 
-        fontPageCopier.copy(dir, context.outputDir(), context.assetsRoot(), snapshot.fonts());
+        fontPageCopier.copy(dir, context.outputDir(), context.assetsRoot(), snapshot.fonts(), snapshot.fontPages());
 
         if (!snapshot.images().isEmpty()) {
-            StagingPreparer.StagingResult staging = stagingPreparer.prepare(dir, context.temporaryDir(), context.assetsRoot());
+            StagingPreparer.StagingResult staging = stagingPreparer.prepare(dir, context.temporaryDir(), context.assetsRoot(), snapshot.fontPages());
 
             if (!staging.images().isEmpty()) {
                 Path relativePath = context.assetsRoot().relativize(dir.toPath());

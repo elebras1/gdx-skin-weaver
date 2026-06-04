@@ -12,7 +12,7 @@ public class DirectoryScanner {
     public DirectorySnapshot scan(File dir) {
         File[] files = dir.listFiles();
         if (files == null) {
-            return new DirectorySnapshot(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), null);
+            return new DirectorySnapshot(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), null);
         }
 
         List<File> subdirectories = new ArrayList<>();
@@ -38,7 +38,12 @@ public class DirectoryScanner {
             }
         }
 
-        return new DirectorySnapshot(subdirectories, fonts, images, existingSkin);
+        FontPageResolver resolver = new FontPageResolver();
+        List<File> fontPages = List.copyOf(resolver.resolve(fonts));
+        if (!fontPages.isEmpty()) {
+            images.removeIf(fontPages::contains);
+        }
+
+        return new DirectorySnapshot(subdirectories, fonts, fontPages, images, existingSkin);
     }
 }
-

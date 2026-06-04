@@ -8,16 +8,23 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
-import java.util.Set;
 
 public class FontPageCopier {
 
-    public void copy(File sourceDir, File outputRoot, Path assetsRoot, List<File> fonts) {
+    public void copy(File sourceDir, File outputRoot, Path assetsRoot, List<File> fonts, List<File> fontPages) {
         File targetDir = AssetFileUtils.getOutputDirectory(sourceDir, outputRoot, assetsRoot);
 
         for (File font : fonts) {
             File targetFile = new File(targetDir, font.getName());
             copyFile(font, targetFile, "font");
+        }
+
+        for (File page : fontPages) {
+            Path pagePath = page.toPath().toAbsolutePath().normalize();
+            Path assetsPath = assetsRoot.toAbsolutePath().normalize();
+            Path relative = pagePath.startsWith(assetsPath) ? assetsPath.relativize(pagePath) : Path.of(page.getName());
+            File targetFile = outputRoot.toPath().resolve(relative).toFile();
+            copyFile(page, targetFile, "font page");
         }
     }
 
@@ -29,4 +36,3 @@ public class FontPageCopier {
         }
     }
 }
-

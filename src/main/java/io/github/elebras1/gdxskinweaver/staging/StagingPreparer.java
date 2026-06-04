@@ -13,10 +13,15 @@ import java.util.*;
 public class StagingPreparer {
     private final ImageContrastAdjuster contrastAdjuster = new ImageContrastAdjuster();
 
-    public StagingResult prepare(File sourceDir, File stagingRoot, Path assetsRoot) {
+    public StagingResult prepare(File sourceDir, File stagingRoot, Path assetsRoot, List<File> excludedImages) {
         List<File> stagedImages = new ArrayList<>();
         Map<String, String> buttonStyles = new HashMap<>();
         Map<String, String> toggleStyles = new HashMap<>();
+
+        Set<Path> excludedPaths = new HashSet<>();
+        for (File file : excludedImages) {
+            excludedPaths.add(file.toPath().toAbsolutePath().normalize());
+        }
 
         File[] images = sourceDir.listFiles(AssetFileUtils::isImage);
         if (images == null) {
@@ -25,6 +30,9 @@ public class StagingPreparer {
 
         Map<String, Map<String, File>> groups = new LinkedHashMap<>();
         for (File file : images) {
+            if (excludedPaths.contains(file.toPath().toAbsolutePath().normalize())) {
+                continue;
+            }
             String name = file.getName();
             String noExt = name.replaceFirst("\\.[^.]*$", "");
             int lastUnderscore = noExt.lastIndexOf('_');

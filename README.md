@@ -43,10 +43,9 @@ Run the task:
 
 ## Output
 For each scanned folder, the plugin writes:
-- `<folder>.atlas` (atlas name matches the folder name).
+- `<folder>.atlas` (atlas name matches the folder name, font pages excluded).
 - `<folder>_skin.json` (generated or merged).
 - Fonts and font pages copied next to the atlas.
 
 ## License
 Apache License. See `LICENSE`.
-
