@@ -48,34 +48,37 @@ public class StagingPreparer {
             File firstFile = parts.values().iterator().next();
             Path rel = assetsRoot.relativize(firstFile.toPath());
             String parent = rel.getParent() == null ? "" : rel.getParent().toString();
+            String fullPrefix = parent.isEmpty() ? prefix : parent + "/" + prefix;
 
             if (parts.containsKey("up") && parts.containsKey("down") && parts.containsKey("over")) {
                 String ext = getExtension(parts.get("up"));
                 copyPart(parts, "up", prefix, parent, ext, stagingRoot, stagedImages);
                 copyPart(parts, "down", prefix, parent, ext, stagingRoot, stagedImages);
                 copyPart(parts, "over", prefix, parent, ext, stagingRoot, stagedImages);
-                buttonStyles.put(prefix, prefix);
+                buttonStyles.put(prefix, fullPrefix);
             } else if (parts.containsKey("on") && parts.containsKey("off")) {
                 String ext = getExtension(parts.get("on"));
                 copyPart(parts, "on", prefix, parent, ext, stagingRoot, stagedImages);
                 copyPart(parts, "off", prefix, parent, ext, stagingRoot, stagedImages);
-                toggleStyles.put(prefix, prefix);
+                toggleStyles.put(prefix, fullPrefix);
             } else if (parts.containsKey("btn")) {
                 File baseFile = parts.get("btn");
                 String ext = getExtension(baseFile);
                 File stagedBase = new File(stagingRoot, parent + "/" + prefix + "_btn" + ext);
                 copyFile(baseFile, stagedBase);
                 stagedImages.add(stagedBase);
-                buttonStyles.put(prefix + "_btn", prefix + "_btn");
+                buttonStyles.put(prefix + "_btn", fullPrefix + "_btn");
 
                 handleOptionalVariant(sourceDir, stagingRoot, baseFile, parent, prefix + "_btn_down", ext, -15f, stagedImages);
                 handleOptionalVariant(sourceDir, stagingRoot, baseFile, parent, prefix + "_btn_over", ext, +15f, stagedImages);
+                copyRemainingParts(parts, Set.of("btn"), assetsRoot, stagingRoot, stagedImages);
             } else if (parts.containsKey("tgl")) {
                 File baseFile = parts.get("tgl");
                 String ext = getExtension(baseFile);
                 handleOptionalVariant(sourceDir, stagingRoot, baseFile, parent, prefix + "_tgl_off", ext, 0, stagedImages);
                 handleOptionalVariant(sourceDir, stagingRoot, baseFile, parent, prefix + "_tgl_on", ext, +15f, stagedImages);
-                toggleStyles.put(prefix + "_tgl", prefix + "_tgl");
+                toggleStyles.put(prefix + "_tgl", fullPrefix + "_tgl");
+                copyRemainingParts(parts, Set.of("tgl"), assetsRoot, stagingRoot, stagedImages);
             } else {
                 for (File f : parts.values()) {
                     Path fRel = assetsRoot.relativize(f.toPath());
@@ -129,6 +132,19 @@ public class StagingPreparer {
             contrastAdjuster.apply(src, dst, percent);
         } catch (IOException e) {
             throw new RuntimeException("Failed to generate " + dst, e);
+        }
+    }
+
+    private void copyRemainingParts(Map<String, File> parts, Set<String> excludedSuffixes, Path assetsRoot, File stagingRoot, List<File> stagedImages) {
+        for (Map.Entry<String, File> entry : parts.entrySet()) {
+            if (excludedSuffixes.contains(entry.getKey())) {
+                continue;
+            }
+            File file = entry.getValue();
+            Path rel = assetsRoot.relativize(file.toPath());
+            File dst = new File(stagingRoot, rel.toString());
+            copyFile(file, dst);
+            stagedImages.add(dst);
         }
     }
 

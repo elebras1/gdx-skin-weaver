@@ -137,10 +137,11 @@ public class SkinJsonService {
             String simpleName = entry.getKey();
             String fullRegion = entry.getValue();
             if (styles.get(simpleName) != null) continue;
+            String region = stripPath(fullRegion);
             JsonObject style = new JsonObject()
-                    .add("up", fullRegion)
-                    .add("down", fullRegion + "_down")
-                    .add("over", fullRegion + "_over");
+                    .add("up", region)
+                    .add("down", region + "_down")
+                    .add("over", region + "_over");
             styles.add(simpleName, style);
         }
     }
@@ -161,11 +162,19 @@ public class SkinJsonService {
             String simpleName = entry.getKey();
             String fullRegion = entry.getValue();
             if (styles.get(simpleName) != null) continue;
+            String region = stripPath(fullRegion);
             JsonObject style = new JsonObject()
-                    .add("up", fullRegion + "_off")
-                    .add("checked", fullRegion + "_on");
+                    .add("up", region + "_off")
+                    .add("checked", region + "_on");
             styles.add(simpleName, style);
         }
+    }
+
+    private String stripPath(String region) {
+        int slash = region.lastIndexOf('/');
+        int backslash = region.lastIndexOf('\\');
+        int idx = Math.max(slash, backslash);
+        return idx == -1 ? region : region.substring(idx + 1);
     }
 
     private void saveToFile(JsonObject object, File target) {
@@ -176,4 +185,3 @@ public class SkinJsonService {
         }
     }
 }
-

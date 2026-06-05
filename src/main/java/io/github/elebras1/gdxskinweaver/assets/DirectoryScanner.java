@@ -40,9 +40,6 @@ public class DirectoryScanner {
 
         FontPageResolver resolver = new FontPageResolver();
         List<File> fontPages = List.copyOf(resolver.resolve(fonts));
-        if (!fontPages.isEmpty()) {
-            images.removeIf(fontPages::contains);
-        }
 
         return new DirectorySnapshot(subdirectories, fonts, fontPages, images, existingSkin);
     }
