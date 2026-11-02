@@ -101,6 +101,21 @@ class StagingPreparerTest {
         assertEquals(Set.of("nine_btn.9.png", "nine_btn_down.9.png", "nine_btn_over.9.png"), fileNameSet(result));
     }
 
+    @Test
+    void excludesFontPagesFromPacking() throws IOException {
+        Path assetsRoot = tempDir.resolve("assets");
+        Path sourceDir = assetsRoot.resolve("fonts");
+        Files.createDirectories(sourceDir);
+        writePng(sourceDir, "arial_14.png");
+        writePng(sourceDir, "other.png");
+
+        StagingPreparer.StagingResult result = new StagingPreparer().prepare(
+                sourceDir.toFile(), tempDir.resolve("staging").toFile(), assetsRoot,
+                List.of(sourceDir.resolve("arial_14.png").toFile()));
+
+        assertEquals(Set.of("other.png"), fileNameSet(result));
+    }
+
     private StagingPreparer.StagingResult prepare(Path assetsRoot, Path sourceDir) {
         return new StagingPreparer().prepare(sourceDir.toFile(), tempDir.resolve("staging").toFile(), assetsRoot, List.of());
     }

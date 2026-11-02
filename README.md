@@ -11,6 +11,8 @@ Gradle plugin that packs libGDX texture atlases and generates skin JSON from ass
 - Detects duplicate region names and prefers the nine-patch version of an image.
 - Validates hand-written skin JSON and reports missing drawables, fonts, colors and duplicate atlas regions.
 - Exposes the texture packer settings (page size, padding, filters, ...).
+- Can keep font page images out of the folder atlas.
+- Generates an HTML preview report of drawables, styles, fonts and colors.
 - Keeps the output directory out of the task inputs so `weaveSkins` can be up-to-date.
 
 ## Installation
@@ -102,6 +104,66 @@ Useful options:
 The plugin removes the previous atlas and its pages before packing, so changing the packer settings
 or removing an asset does not leave stale regions behind.
 
+### Generated name constants
+`weaveSkins` also generates a Java constants file from the generated atlases and skin JSON files.
+
+```kotlin
+extensions.configure<io.github.elebras1.gdxskinweaver.SkinWeaverExtension>("skinWeaver") {
+    names.packageName.set("com.example.ui.generated")
+    names.className.set("SkinNames")
+    names.outputDir.set(layout.buildDirectory.dir("generated/sources/skinWeaver/java"))
+}
+```
+
+The generated structure follows the skin folders:
+
+```java
+SkinNames.UiSkin.Drawables.BG_PROVINCE
+SkinNames.UiSkin.Styles.Button.SETTINGS_LESS_BTN
+SkinNames.FontsSkin.Fonts.ARIAL_14
+SkinNames.FontsSkin.Colors.RED
+```
+
+When the plugin is applied to a project with the `java` plugin, the generated directory is added to
+the `main` source set automatically. When it is applied to the root project, wire it from the Java
+module:
+
+```groovy
+sourceSets.main.java.srcDir(rootProject.layout.buildDirectory.dir("generated/sources/skinWeaver/java"))
+compileJava.dependsOn rootProject.tasks.named("weaveSkins")
+```
+
+Use `names.enabled.set(false)` to disable generation.
+
+### Font pages
+By default, font page images are packed into the folder atlas. When the atlas is not used for
+fonts, disable that packing and let the plugin only copy the `.fnt` files and their pages:
+
+```kotlin
+extensions.configure<io.github.elebras1.gdxskinweaver.SkinWeaverExtension>("skinWeaver") {
+    packFontPages.set(false)
+}
+```
+
+### HTML preview
+Generate a local report of every generated skin:
+
+```bash
+./gradlew generateSkinReport
+```
+
+The report is written to `build/reports/skin-weaver/index.html`. It lists drawables with thumbnails,
+styles with their drawable previews, fonts and colors. It uses local `file://` image URLs, so open it
+on the machine that produced the assets.
+
+The output path can be changed on the task:
+
+```groovy
+tasks.named('generateSkinReport') {
+    reportFile.set(layout.projectDirectory.file('build/skin-report.html'))
+}
+```
+
 ### Validation
 When enabled (default), the plugin checks the merged skin against the generated atlas and prints
 warnings for:
@@ -136,7 +198,7 @@ extensions.configure<io.github.elebras1.gdxskinweaver.SkinWeaverExtension>("skin
 
 ## Output
 For each scanned folder, the plugin writes:
-- `<folder>.atlas` (atlas name matches the folder name, font pages included).
+- `<folder>.atlas` (atlas name matches the folder name, font pages included unless `packFontPages` is disabled).
 - `<folder>.json` (generated or merged).
 - Fonts and font pages copied next to the atlas.
 

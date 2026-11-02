@@ -4,6 +4,7 @@ import io.github.elebras1.gdxskinweaver.assets.DirectoryScanner;
 import io.github.elebras1.gdxskinweaver.assets.FontPageCopier;
 import io.github.elebras1.gdxskinweaver.core.WeaveContext;
 import io.github.elebras1.gdxskinweaver.core.WeaveProcessor;
+import io.github.elebras1.gdxskinweaver.names.SkinNamesGenerator;
 import io.github.elebras1.gdxskinweaver.service.SkinJsonService;
 import io.github.elebras1.gdxskinweaver.service.TexturePackerService;
 import io.github.elebras1.gdxskinweaver.skin.SkinFileHandler;
@@ -74,18 +75,40 @@ public abstract class GdxSkinWeaverTask extends DefaultTask {
     @Input
     public abstract Property<Boolean> getValidateSkins();
 
+    @Input
+    public abstract Property<Boolean> getPackFontPages();
+
+    @Input
+    public abstract Property<Boolean> getGenerateNames();
+
+    @Input
+    public abstract Property<String> getNamesPackage();
+
+    @Input
+    public abstract Property<String> getNamesClassName();
+
+    @OutputDirectory
+    public abstract DirectoryProperty getNamesOutputDir();
+
     private final WeaveProcessor weaveProcessor;
+    private final SkinNamesGenerator skinNamesGenerator;
 
     public GdxSkinWeaverTask() {
         SkinJsonService skinService = new SkinJsonService();
         this.weaveProcessor = new WeaveProcessor(new DirectoryScanner(), new StagingPreparer(), new FontPageCopier(),
                 new TexturePackerService(), new SkinFileHandler(skinService), new SkinValidator());
+        this.skinNamesGenerator = new SkinNamesGenerator();
 
         getPackerOptions().convention(Collections.emptyMap());
         getGenerateLabelStyles().convention(true);
         getLabelStyleColors().convention(Collections.emptyList());
         getDefaultLabelColor().convention("");
         getValidateSkins().convention(true);
+        getPackFontPages().convention(true);
+        getGenerateNames().convention(true);
+        getNamesPackage().convention("io.github.elebras1.gdxskinweaver.generated");
+        getNamesClassName().convention("SkinNames");
+        getNamesOutputDir().convention(getProject().getLayout().getBuildDirectory().dir("generated/sources/skinWeaver/java"));
     }
 
     @TaskAction
@@ -111,7 +134,16 @@ public abstract class GdxSkinWeaverTask extends DefaultTask {
         );
 
         WeaveContext context = new WeaveContext(assetsRoot, outputDir, excludedDirsWithOutput, getTemporaryDir(),
-                this.getPackerOptions().get(), skinGenerationConfig);
+                this.getPackerOptions().get(), this.getPackFontPages().get(), skinGenerationConfig);
         weaveProcessor.process(assetsDir, context);
+
+        if (this.getGenerateNames().get()) {
+            this.skinNamesGenerator.generate(outputDir, this.getNamesOutputDir().get().getAsFile(),
+                    this.getNamesPackage().get(), this.getNamesClassName().get(),
+                    this.getPackerOptions().get().getOrDefault("atlasExtension", ".atlas"));
+        } else {
+            this.skinNamesGenerator.clean(this.getNamesOutputDir().get().getAsFile(),
+                    this.getNamesPackage().get(), this.getNamesClassName().get());
+        }
     }
 }

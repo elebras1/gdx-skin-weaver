@@ -1,8 +1,11 @@
 package io.github.elebras1.gdxskinweaver;
 
+import io.github.elebras1.gdxskinweaver.report.SkinReportTask;
 import io.github.elebras1.gdxskinweaver.task.GdxSkinWeaverTask;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskProvider;
 
 public class GdxSkinWeaver implements Plugin<Project> {
@@ -11,6 +14,7 @@ public class GdxSkinWeaver implements Plugin<Project> {
         SkinWeaverExtension extension = project.getExtensions().create("skinWeaver", SkinWeaverExtension.class);
 
         TaskProvider<GdxSkinWeaverTask> taskProvider = project.getTasks().register("weaveSkins", GdxSkinWeaverTask.class);
+        TaskProvider<SkinReportTask> reportTaskProvider = project.getTasks().register("generateSkinReport", SkinReportTask.class);
 
         project.afterEvaluate(p -> {
             GdxSkinWeaverTask skinWeaverTask = taskProvider.get();
@@ -22,12 +26,37 @@ public class GdxSkinWeaver implements Plugin<Project> {
             skinWeaverTask.getLabelStyleColors().set(extension.getLabelStyleColors());
             skinWeaverTask.getDefaultLabelColor().set(extension.getDefaultLabelColor());
             skinWeaverTask.getValidateSkins().set(extension.getValidateSkins());
+            skinWeaverTask.getPackFontPages().set(extension.getPackFontPages());
+            skinWeaverTask.getGenerateNames().set(extension.getNames().getEnabled());
+            skinWeaverTask.getNamesPackage().set(extension.getNames().getPackageName());
+            skinWeaverTask.getNamesClassName().set(extension.getNames().getClassName());
+
+            if (!extension.getNames().getOutputDir().isPresent()) {
+                extension.getNames().getOutputDir().set(p.getLayout().getBuildDirectory().dir("generated/sources/skinWeaver/java"));
+            }
+            skinWeaverTask.getNamesOutputDir().set(extension.getNames().getOutputDir());
 
             if (!skinWeaverTask.getAssetsDir().isPresent()) {
                 skinWeaverTask.getAssetsDir().set(p.getLayout().getProjectDirectory().dir("assets"));
             }
             if (!skinWeaverTask.getOutputDir().isPresent()) {
                 skinWeaverTask.getOutputDir().set(skinWeaverTask.getAssetsDir().get().dir("skins"));
+            }
+
+            SkinReportTask reportTask = reportTaskProvider.get();
+            reportTask.getSkinsDir().set(skinWeaverTask.getOutputDir());
+            reportTask.getAtlasExtension().set(extension.getPacker().getAtlasExtension());
+            reportTask.dependsOn(taskProvider);
+
+            if (extension.getNames().getEnabled().get() && p.getPluginManager().hasPlugin("java")) {
+                SourceSetContainer sourceSets = p.getExtensions().findByType(SourceSetContainer.class);
+                if (sourceSets != null) {
+                    SourceSet main = sourceSets.findByName(SourceSet.MAIN_SOURCE_SET_NAME);
+                    if (main != null) {
+                        main.getJava().srcDir(skinWeaverTask.getNamesOutputDir().get().getAsFile());
+                        p.getTasks().named("compileJava").configure(task -> task.dependsOn(taskProvider));
+                    }
+                }
             }
         });
     }

@@ -3,6 +3,7 @@ package io.github.elebras1.gdxskinweaver.skin;
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
+import io.github.elebras1.gdxskinweaver.atlas.AtlasRegionReader;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -10,12 +11,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public class SkinValidator {
@@ -61,13 +59,13 @@ public class SkinValidator {
             return warnings;
         }
 
-        AtlasInfo atlas = null;
+        AtlasRegionReader.AtlasRegions atlas = null;
         if (atlasFile != null) {
             if (!atlasFile.exists()) {
                 warnings.add("Atlas file not found: " + atlasFile.getName());
             } else {
                 try {
-                    atlas = readAtlas(atlasFile);
+                    atlas = new AtlasRegionReader().read(atlasFile);
                     for (String duplicate : atlas.duplicates()) {
                         warnings.add("Duplicate atlas region '" + duplicate + "' without an index; the first region wins.");
                     }
@@ -107,7 +105,7 @@ public class SkinValidator {
 
                     if (DRAWABLE_FIELDS.contains(field)) {
                         hasDrawableStyles = true;
-                        if (atlas != null && !atlas.regions().contains(reference)) {
+                        if (atlas != null && !atlas.names().contains(reference)) {
                             warnings.add(styleName + " (" + className + "): missing drawable '" + reference + "'");
                         }
                     } else if (FONT_FIELDS.contains(field)) {
@@ -139,53 +137,5 @@ public class SkinValidator {
             return Set.of();
         }
         return new LinkedHashSet<>(value.asObject().names());
-    }
-
-    private AtlasInfo readAtlas(File atlasFile) throws IOException {
-        List<String> lines = Files.readAllLines(atlasFile.toPath(), StandardCharsets.UTF_8);
-        Set<String> regions = new LinkedHashSet<>();
-        Map<String, Integer> counts = new LinkedHashMap<>();
-        Set<String> indexed = new LinkedHashSet<>();
-
-        for (int i = 0; i < lines.size(); i++) {
-            String line = lines.get(i).trim();
-            if (line.isEmpty() || line.contains(":")) {
-                continue;
-            }
-
-            String next = i + 1 < lines.size() ? lines.get(i + 1).trim() : "";
-            if (isPageHeader(next)) {
-                continue;
-            }
-
-            regions.add(line);
-            counts.merge(line, 1, Integer::sum);
-            if (next.startsWith("index:")) {
-                indexed.add(line);
-            }
-        }
-
-        List<String> duplicates = new ArrayList<>();
-        for (Map.Entry<String, Integer> entry : counts.entrySet()) {
-            if (entry.getValue() > 1 && !indexed.contains(entry.getKey())) {
-                duplicates.add(entry.getKey());
-            }
-        }
-
-        return new AtlasInfo(regions, duplicates);
-    }
-
-    private boolean isPageHeader(String nextLine) {
-        return nextLine.startsWith("size:")
-                || nextLine.startsWith("format:")
-                || nextLine.startsWith("filter:")
-                || nextLine.startsWith("repeat:");
-    }
-
-    private record AtlasInfo(Set<String> regions, List<String> duplicates) {
-        private AtlasInfo {
-            regions = Set.copyOf(regions);
-            duplicates = List.copyOf(duplicates);
-        }
     }
 }

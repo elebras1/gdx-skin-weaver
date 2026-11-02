@@ -50,7 +50,8 @@ public class WeaveProcessor {
         File targetDir = AssetFileUtils.getOutputDirectory(dir, context.outputDir(), context.assetsRoot());
 
         if (!snapshot.images().isEmpty()) {
-            StagingPreparer.StagingResult staging = stagingPreparer.prepare(dir, context.temporaryDir(), context.assetsRoot(), Collections.emptyList());
+            List<File> excludedImages = context.packFontPages() ? Collections.emptyList() : snapshot.fontPages();
+            StagingPreparer.StagingResult staging = stagingPreparer.prepare(dir, context.temporaryDir(), context.assetsRoot(), excludedImages);
 
             if (!staging.images().isEmpty() && targetDir != null) {
                 texturePackerDAO.pack(context.temporaryDir(), targetDir, atlasName, staging.images(), context.packerOptions());

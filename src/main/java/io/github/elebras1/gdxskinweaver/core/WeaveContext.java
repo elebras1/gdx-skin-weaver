@@ -13,6 +13,7 @@ public record WeaveContext(
         Set<String> excludedDirs,
         File temporaryDir,
         Map<String, String> packerOptions,
+        boolean packFontPages,
         SkinGenerationConfig skinGeneration
 ) {
 
