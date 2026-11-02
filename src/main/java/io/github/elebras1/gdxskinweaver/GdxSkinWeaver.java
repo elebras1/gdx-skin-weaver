@@ -4,6 +4,7 @@ import io.github.elebras1.gdxskinweaver.report.SkinReportTask;
 import io.github.elebras1.gdxskinweaver.task.GdxSkinWeaverTask;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.tasks.Delete;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskProvider;
@@ -15,6 +16,20 @@ public class GdxSkinWeaver implements Plugin<Project> {
 
         TaskProvider<GdxSkinWeaverTask> taskProvider = project.getTasks().register("weaveSkins", GdxSkinWeaverTask.class);
         TaskProvider<SkinReportTask> reportTaskProvider = project.getTasks().register("generateSkinReport", SkinReportTask.class);
+        TaskProvider<Delete> cleanTaskProvider = project.getTasks().register("cleanSkins", Delete.class);
+
+        taskProvider.configure(task -> {
+            task.setGroup("gdx");
+            task.setDescription("Packs libGDX texture atlases and generates skin JSON files.");
+        });
+        reportTaskProvider.configure(task -> {
+            task.setGroup("gdx");
+            task.setDescription("Generates an HTML preview of the generated skins.");
+        });
+        cleanTaskProvider.configure(task -> {
+            task.setGroup("gdx");
+            task.setDescription("Deletes the generated skins directory.");
+        });
 
         project.afterEvaluate(p -> {
             GdxSkinWeaverTask skinWeaverTask = taskProvider.get();
@@ -47,6 +62,8 @@ public class GdxSkinWeaver implements Plugin<Project> {
             reportTask.getSkinsDir().set(skinWeaverTask.getOutputDir());
             reportTask.getAtlasExtension().set(extension.getPacker().getAtlasExtension());
             reportTask.dependsOn(taskProvider);
+
+            cleanTaskProvider.get().delete(skinWeaverTask.getOutputDir().get().getAsFile());
 
             if (extension.getNames().getEnabled().get() && p.getPluginManager().hasPlugin("java")) {
                 SourceSetContainer sourceSets = p.getExtensions().findByType(SourceSetContainer.class);

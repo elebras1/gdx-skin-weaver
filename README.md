@@ -14,6 +14,8 @@ Gradle plugin that packs libGDX texture atlases and generates skin JSON from ass
 - Can keep font page images out of the folder atlas.
 - Generates an HTML preview report of drawables, styles, fonts and colors.
 - Keeps the output directory out of the task inputs so `weaveSkins` can be up-to-date.
+- Supports the Gradle build cache for `weaveSkins`.
+- Provides a `cleanSkins` task for the generated skins directory.
 
 ## Installation
 In your `build.gradle.kts`:
@@ -40,6 +42,23 @@ Run the task:
 ```bash
 ./gradlew weaveSkins
 ```
+
+## Tasks
+
+| Task | Description |
+| --- | --- |
+| `weaveSkins` | Packs atlases, generates skin JSON, label styles and optional `SkinNames`. |
+| `generateSkinReport` | Generates the HTML preview report. |
+| `cleanSkins` | Deletes the generated skins directory. |
+
+`weaveSkins` is cacheable and works with the Gradle build cache:
+
+```bash
+./gradlew weaveSkins --build-cache
+```
+
+`cleanSkins` only deletes the configured `outputDir`. Generated names under `build/` are removed by
+the standard Gradle `clean` task.
 
 ### Label styles
 Label style generation is enabled by default. Colors are read from the `com.badlogic.gdx.graphics.Color`
