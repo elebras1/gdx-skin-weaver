@@ -20,7 +20,16 @@ repositories {
 
 dependencies {
     implementation("com.github.tommyettinger:libgdx-texturepacker:1.14.0.0")
+    implementation("com.badlogicgames.gdx:gdx:1.14.2")
     implementation("com.eclipsesource.minimal-json:minimal-json:0.9.5")
+
+    testImplementation(platform("org.junit:junit-bom:5.11.4"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 gradlePlugin {

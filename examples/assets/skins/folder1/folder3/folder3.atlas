@@ -12,10 +12,6 @@ eco_btn
 bounds:2,17,91,36
 eco_btn_down
 bounds:95,17,91,36
-eco_btn_down
-bounds:95,17,91,36
-eco_btn_over
-bounds:188,17,91,36
 eco_btn_over
 bounds:188,17,91,36
 knight

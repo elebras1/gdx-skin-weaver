@@ -5,6 +5,7 @@ import io.github.elebras1.gdxskinweaver.util.AssetFileUtils;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class DirectoryScanner {
@@ -37,6 +38,10 @@ public class DirectoryScanner {
                 images.add(file);
             }
         }
+
+        subdirectories.sort(Comparator.comparing(File::getName));
+        fonts.sort(Comparator.comparing(File::getName));
+        images.sort(Comparator.comparing(File::getName));
 
         FontPageResolver resolver = new FontPageResolver();
         List<File> fontPages = List.copyOf(resolver.resolve(fonts));

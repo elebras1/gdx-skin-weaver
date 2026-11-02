@@ -17,6 +17,11 @@ public class GdxSkinWeaver implements Plugin<Project> {
             skinWeaverTask.getAssetsDir().set(extension.getAssetsDir());
             skinWeaverTask.getOutputDir().set(extension.getOutputDir());
             skinWeaverTask.getExcludedDirs().set(extension.getExcludedDirs());
+            skinWeaverTask.getPackerOptions().set(p.provider(() -> extension.getPacker().toOptions()));
+            skinWeaverTask.getGenerateLabelStyles().set(extension.getGenerateLabelStyles());
+            skinWeaverTask.getLabelStyleColors().set(extension.getLabelStyleColors());
+            skinWeaverTask.getDefaultLabelColor().set(extension.getDefaultLabelColor());
+            skinWeaverTask.getValidateSkins().set(extension.getValidateSkins());
 
             if (!skinWeaverTask.getAssetsDir().isPresent()) {
                 skinWeaverTask.getAssetsDir().set(p.getLayout().getProjectDirectory().dir("assets"));

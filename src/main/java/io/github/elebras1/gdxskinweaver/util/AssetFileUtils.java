@@ -18,6 +18,12 @@ public class AssetFileUtils {
         return file.getName().toLowerCase().endsWith("_skin.json");
     }
 
+    public static String getBaseName(File file) {
+        String name = file.getName();
+        int dot = name.lastIndexOf('.');
+        return dot == -1 ? name : name.substring(0, dot);
+    }
+
     public static File getOutputDirectory(File sourceDir, File outputRoot, Path assetsRoot) {
         Path sourcePath = sourceDir.toPath();
         String relative = assetsRoot.relativize(sourcePath).toString();

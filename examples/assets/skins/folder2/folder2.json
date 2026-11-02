@@ -14,5 +14,14 @@
       "markupEnabled": false,
       "flip": false
     }
+  },
+  "com.badlogic.gdx.scenes.scene2d.ui.Label$LabelStyle": {
+    "chinese_17": {
+      "font": "chinese_17"
+    },
+    "chinese_17_blue": {
+      "font": "chinese_17",
+      "fontColor": "blue"
+    }
   }
 }
