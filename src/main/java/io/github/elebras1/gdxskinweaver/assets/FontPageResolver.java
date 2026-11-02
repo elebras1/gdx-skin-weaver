@@ -46,6 +46,8 @@ public class FontPageResolver {
                 File pageFile = resolvePageFile(font, fileName);
                 if (pageFile.exists()) {
                     pages.add(pageFile);
+                } else {
+                    warn("Missing font page '" + fileName + "' referenced by " + font.getName() + ".");
                 }
             }
         } catch (IOException e) {
@@ -60,6 +62,10 @@ public class FontPageResolver {
             return pagePath.toFile();
         }
         return new File(font.getParentFile(), fileName);
+    }
+
+    private void warn(String message) {
+        System.err.println("[gdx-skin-weaver] " + message);
     }
 }
 

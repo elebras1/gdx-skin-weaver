@@ -31,13 +31,13 @@
       "down": "eco_btn_down",
       "over": "eco_btn_over"
     },
-    "ac_long_tgl": {
-      "up": "ac_long_tgl_off",
-      "checked": "ac_long_tgl_on"
-    },
     "crate_tgl": {
       "up": "crate_tgl_off",
       "checked": "crate_tgl_on"
+    },
+    "ac_long_tgl": {
+      "up": "ac_long_tgl_off",
+      "checked": "ac_long_tgl_on"
     }
   }
 }

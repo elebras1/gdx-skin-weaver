@@ -57,6 +57,8 @@ class SkinReportGeneratorTest {
         assertTrue(html.contains("file:"));
         assertTrue(html.contains("Button"));
         assertTrue(html.contains("rgba(255, 0, 0, 1.00)"));
+        assertTrue(html.contains("id=\"filter\""));
+        assertTrue(html.contains("addEventListener"));
     }
 
     private void writePng(Path file) throws IOException {

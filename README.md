@@ -145,6 +145,8 @@ extensions.configure<io.github.elebras1.gdxskinweaver.SkinWeaverExtension>("skin
 }
 ```
 
+Missing page files referenced by a `.fnt` are reported as warnings.
+
 ### HTML preview
 Generate a local report of every generated skin:
 
@@ -170,6 +172,7 @@ warnings for:
 
 - a style that references a missing drawable;
 - a style that references a missing bitmap font or color;
+- a font that references a missing page file;
 - duplicate atlas regions without an animation index;
 - a skin with drawable styles but no atlas next to it.
 

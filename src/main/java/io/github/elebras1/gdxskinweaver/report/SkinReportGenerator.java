@@ -47,6 +47,7 @@ public class SkinReportGenerator {
             body { margin: 24px; background: #1b1b1f; color: #d8d8dc; font-family: system-ui, sans-serif; }
             h1, h2, h3, h4 { color: #ffffff; margin: 24px 0 12px; }
             h1 { margin-top: 0; }
+            #filter { width: 100%; max-width: 480px; margin: 0 0 16px; padding: 10px 12px; border-radius: 6px; border: 1px solid #3a3a42; background: #26262c; color: #ffffff; }
             a { color: #7cc4ff; text-decoration: none; }
             a:hover { text-decoration: underline; }
             nav { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 12px 0 20px; border-bottom: 1px solid #3a3a42; }
@@ -148,7 +149,9 @@ public class SkinReportGenerator {
         StringBuilder html = new StringBuilder();
         html.append("<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n");
         html.append("<title>Skin Weaver report</title>\n<style>\n").append(CSS).append("</style>\n</head>\n<body>\n");
-        html.append("<h1>Skin Weaver report</h1>\n<nav>\n");
+        html.append("<h1>Skin Weaver report</h1>\n");
+        html.append("<input id=\"filter\" type=\"search\" placeholder=\"Filter skins, drawables, styles, fonts, colors\">\n");
+        html.append("<nav>\n");
         for (SkinData skin : skins) {
             html.append("<a href=\"#").append(skin.id).append("\">").append(escape(skin.relativePath)).append("</a>\n");
         }
@@ -158,6 +161,15 @@ public class SkinReportGenerator {
             renderSkin(html, skin);
         }
 
+        html.append("<script>\n");
+        html.append("const filter = document.getElementById('filter');\n");
+        html.append("filter.addEventListener('input', () => {\n");
+        html.append("    const query = filter.value.toLowerCase();\n");
+        html.append("    document.querySelectorAll('.card, .style').forEach(element => {\n");
+        html.append("        element.style.display = element.textContent.toLowerCase().includes(query) ? '' : 'none';\n");
+        html.append("    });\n");
+        html.append("});\n");
+        html.append("</script>\n");
         html.append("</body>\n</html>\n");
         return html.toString();
     }
