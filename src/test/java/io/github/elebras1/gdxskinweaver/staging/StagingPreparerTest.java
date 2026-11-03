@@ -7,10 +7,15 @@ import javax.imageio.ImageIO;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -116,6 +121,25 @@ class StagingPreparerTest {
         assertEquals(Set.of("other.png"), fileNameSet(result));
     }
 
+    @Test
+    void keepsRenamedFontPageWhenAnotherImageUsesItsRegionName() throws IOException {
+        Path assetsRoot = tempDir.resolve("assets");
+        Path sourceDir = assetsRoot.resolve("fonts");
+        Files.createDirectories(sourceDir);
+        Path page = writePng(sourceDir, "page.png", 8, Color.RED);
+        writePng(sourceDir, "font_0.png", 16, Color.BLUE);
+        Path stagingRoot = tempDir.resolve("staging");
+
+        String err = captureErr(() -> new StagingPreparer().prepare(sourceDir.toFile(), stagingRoot.toFile(), assetsRoot,
+                List.of(), Map.of(page.toFile(), List.of("font_0"))));
+
+        Path staged = stagingRoot.resolve("fonts/font_0.png");
+        assertTrue(Files.exists(staged));
+        BufferedImage image = ImageIO.read(staged.toFile());
+        assertEquals(8, image.getWidth());
+        assertTrue(err.contains("collides with font page"));
+    }
+
     private StagingPreparer.StagingResult prepare(Path assetsRoot, Path sourceDir) {
         return new StagingPreparer().prepare(sourceDir.toFile(), tempDir.resolve("staging").toFile(), assetsRoot, List.of());
     }
@@ -128,16 +152,40 @@ class StagingPreparerTest {
         return result.images().stream().map(file -> file.getName()).collect(Collectors.toSet());
     }
 
-    private void writePng(Path dir, String name) throws IOException {
+    private Path writePng(Path dir, String name) throws IOException {
+        return writePng(dir, name, 8, Color.RED);
+    }
+
+    private Path writePng(Path dir, String name, int size, Color color) throws IOException {
         Path file = dir.resolve(name);
-        BufferedImage image = new BufferedImage(8, 8, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics = image.createGraphics();
         try {
-            graphics.setColor(Color.RED);
+            graphics.setColor(color);
             graphics.fillRect(0, 0, image.getWidth(), image.getHeight());
         } finally {
             graphics.dispose();
         }
         ImageIO.write(image, "png", file.toFile());
+        return file;
+    }
+
+    private String captureErr(ThrowingRunnable action) {
+        PrintStream original = System.err;
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        System.setErr(new PrintStream(buffer, true, StandardCharsets.UTF_8));
+        try {
+            action.run();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        } finally {
+            System.setErr(original);
+        }
+        return buffer.toString(StandardCharsets.UTF_8);
+    }
+
+    @FunctionalInterface
+    private interface ThrowingRunnable {
+        void run() throws IOException;
     }
 }

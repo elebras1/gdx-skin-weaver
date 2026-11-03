@@ -103,7 +103,8 @@ class SkinJsonServiceTest {
         Path existing = writeExistingSkin("""
                 {
                   "com.badlogic.gdx.graphics.Color": {
-                    "red": {"r": 1, "g": 0, "b": 0, "a": 1}
+                    "red": {"r": 1, "g": 0, "b": 0, "a": 1},
+                    "blue": {"r": 0, "g": 0, "b": 1, "a": 1}
                   }
                 }
                 """);
@@ -117,6 +118,7 @@ class SkinJsonServiceTest {
         JsonObject collision = labels.get("arial_14_red").asObject();
         assertEquals("arial_14_red", collision.get("font").asString());
         assertNull(collision.get("fontColor"));
+        assertEquals("blue", labels.get("arial_14_blue").asObject().get("fontColor").asString());
         assertTrue(err.contains("Label style 'arial_14_red'"));
         assertTrue(err.contains("the font 'arial_14_red' already uses this name"));
     }

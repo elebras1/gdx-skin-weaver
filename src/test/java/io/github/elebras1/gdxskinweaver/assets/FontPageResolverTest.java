@@ -3,11 +3,15 @@ package io.github.elebras1.gdxskinweaver.assets;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -59,6 +63,54 @@ class FontPageResolverTest {
         List<FontPageResolver.FontPage> pages = new FontPageResolver().resolvePages(List.of(font));
 
         assertEquals(List.of("font"), pages.stream().map(FontPageResolver.FontPage::regionName).toList());
+    }
+
+    @Test
+    void sortsPageRegionsNumerically() throws IOException {
+        List<String> pageLines = new ArrayList<>();
+        for (int i = 0; i <= 10; i++) {
+            Files.writeString(tempDir.resolve("page" + i + ".png"), "", StandardCharsets.UTF_8);
+            pageLines.add("page id=" + i + " file=\"page" + i + ".png\"");
+        }
+        File font = writeFont(String.join("\n", pageLines));
+
+        List<FontPageResolver.FontPage> pages = new FontPageResolver().resolvePages(List.of(font));
+
+        assertEquals(List.of("font_0", "font_1", "font_2", "font_3", "font_4", "font_5", "font_6", "font_7",
+                "font_8", "font_9", "font_10"), pages.stream().map(FontPageResolver.FontPage::regionName).toList());
+    }
+
+    @Test
+    void warnsWhenMultiPageFontHasNonContiguousPageIds() throws IOException {
+        Files.writeString(tempDir.resolve("first.png"), "", StandardCharsets.UTF_8);
+        Files.writeString(tempDir.resolve("third.png"), "", StandardCharsets.UTF_8);
+        File font = writeFont("page id=0 file=\"first.png\"\npage id=2 file=\"third.png\"");
+
+        String err = captureErr(() -> {
+            List<FontPageResolver.FontPage> pages = new FontPageResolver().resolvePages(List.of(font));
+            assertEquals(List.of("font_0", "font_2"), pages.stream().map(FontPageResolver.FontPage::regionName).toList());
+        });
+
+        assertTrue(err.contains("non-contiguous page ids"));
+    }
+
+    private String captureErr(ThrowingRunnable action) {
+        PrintStream original = System.err;
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        System.setErr(new PrintStream(buffer, true, StandardCharsets.UTF_8));
+        try {
+            action.run();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        } finally {
+            System.setErr(original);
+        }
+        return buffer.toString(StandardCharsets.UTF_8);
+    }
+
+    @FunctionalInterface
+    private interface ThrowingRunnable {
+        void run() throws IOException;
     }
 
     private File writeFont(String pageLine) throws IOException {

@@ -48,7 +48,8 @@ public class StagingPreparer {
         List<File> images = new ArrayList<>(Arrays.asList(listedImages));
         images.sort(Comparator.comparing(File::getName));
         images.removeIf(file -> excludedPaths.contains(file.toPath().toAbsolutePath().normalize()));
-        images.removeIf(file -> stageRenamed(file, renamedImages, stagingRoot, assetsRoot, staged));
+        List<Map.Entry<File, List<String>>> renamedPages = new ArrayList<>();
+        images.removeIf(file -> isRenamed(file, renamedImages, renamedPages));
         images = deduplicate(images);
 
         Map<String, Map<String, File>> groups = new LinkedHashMap<>();
@@ -94,24 +95,37 @@ public class StagingPreparer {
             }
         }
 
+        // Stage font pages last so a regular image cannot overwrite a region name reserved by a font page.
+        for (Map.Entry<File, List<String>> page : renamedPages) {
+            stageRenamed(page.getKey(), page.getValue(), stagingRoot, assetsRoot, staged);
+        }
+
         return new StagingResult(staged.list(), buttonStyles, toggleStyles);
     }
 
-    private boolean stageRenamed(File file, Map<File, List<String>> renamedImages, File stagingRoot, Path assetsRoot,
-                                 StagedImages staged) {
+    private boolean isRenamed(File file, Map<File, List<String>> renamedImages,
+                              List<Map.Entry<File, List<String>>> renamedPages) {
         Path path = file.toPath().toAbsolutePath().normalize();
         for (Map.Entry<File, List<String>> entry : renamedImages.entrySet()) {
-            if (!entry.getKey().toPath().toAbsolutePath().normalize().equals(path)) {
-                continue;
+            if (entry.getKey().toPath().toAbsolutePath().normalize().equals(path)) {
+                renamedPages.add(entry);
+                return true;
             }
-            for (String regionName : entry.getValue()) {
-                File target = stagingFileForVariant(file, stagingRoot, assetsRoot, regionName);
-                copyFile(file, target);
-                staged.add(target);
-            }
-            return true;
         }
         return false;
+    }
+
+    private void stageRenamed(File file, List<String> regionNames, File stagingRoot, Path assetsRoot,
+                              StagedImages staged) {
+        for (String regionName : regionNames) {
+            File target = stagingFileForVariant(file, stagingRoot, assetsRoot, regionName);
+            if (staged.contains(target)) {
+                warn("Image '" + target.getName() + "' collides with font page '" + file.getName() + "' (region '"
+                        + regionName + "'); keeping the font page.");
+            }
+            copyFile(file, target);
+            staged.add(target);
+        }
     }
 
     private List<File> deduplicate(List<File> images) {
@@ -283,6 +297,10 @@ public class StagingPreparer {
 
         void add(File file) {
             files.putIfAbsent(file.toPath().toAbsolutePath().normalize(), file);
+        }
+
+        boolean contains(File file) {
+            return files.containsKey(file.toPath().toAbsolutePath().normalize());
         }
 
         List<File> list() {

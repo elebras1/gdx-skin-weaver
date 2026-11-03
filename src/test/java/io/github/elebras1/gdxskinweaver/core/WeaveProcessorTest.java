@@ -2,6 +2,7 @@ package io.github.elebras1.gdxskinweaver.core;
 
 import io.github.elebras1.gdxskinweaver.assets.DirectoryScanner;
 import io.github.elebras1.gdxskinweaver.assets.FontPageCopier;
+import io.github.elebras1.gdxskinweaver.atlas.AtlasRegionReader;
 import io.github.elebras1.gdxskinweaver.service.SkinJsonService;
 import io.github.elebras1.gdxskinweaver.service.TexturePackerService;
 import io.github.elebras1.gdxskinweaver.skin.SkinFileHandler;
@@ -68,6 +69,62 @@ class WeaveProcessorTest {
         assertFalse(Files.exists(output.resolve("assets.json")));
     }
 
+    @Test
+    void packsMultiPageFontUnderPageIds() throws IOException {
+        Path assets = Files.createDirectories(tempDir.resolve("assets"));
+        Path fonts = Files.createDirectories(assets.resolve("fonts"));
+        String[] pageFiles = new String[11];
+        for (int i = 0; i < pageFiles.length; i++) {
+            pageFiles[i] = "raw" + i + ".png";
+            writePng(fonts.resolve(pageFiles[i]), 8 + i);
+        }
+        writeFont(fonts.resolve("chinese_60.fnt"), pageFiles);
+        Path output = tempDir.resolve("out");
+
+        processor().process(assets.toFile(), context(assets, output, Set.of(), true));
+
+        AtlasRegionReader.AtlasRegions regions = new AtlasRegionReader()
+                .read(output.resolve("fonts/fonts.atlas").toFile());
+        for (int i = 0; i < pageFiles.length; i++) {
+            int page = i;
+            assertTrue(regions.names().contains("chinese_60_" + page), () -> "Missing page " + page);
+        }
+        assertTrue(regions.indexedNames().contains("chinese_60"));
+    }
+
+    @Test
+    void packsSinglePageFontUnderFontName() throws IOException {
+        Path assets = Files.createDirectories(tempDir.resolve("assets"));
+        Path fonts = Files.createDirectories(assets.resolve("fonts"));
+        writePng(fonts.resolve("raw.png"));
+        writeFont(fonts.resolve("arial_17.fnt"), "raw.png");
+        Path output = tempDir.resolve("out");
+
+        processor().process(assets.toFile(), context(assets, output, Set.of(), true));
+
+        AtlasRegionReader.AtlasRegions regions = new AtlasRegionReader()
+                .read(output.resolve("fonts/fonts.atlas").toFile());
+        assertTrue(regions.names().contains("arial_17"));
+        assertFalse(regions.names().contains("raw"));
+    }
+
+    @Test
+    void packsSharedFontPageForEveryFont() throws IOException {
+        Path assets = Files.createDirectories(tempDir.resolve("assets"));
+        Path fonts = Files.createDirectories(assets.resolve("fonts"));
+        writePng(fonts.resolve("shared.png"));
+        writeFont(fonts.resolve("first.fnt"), "shared.png");
+        writeFont(fonts.resolve("second.fnt"), "shared.png");
+        Path output = tempDir.resolve("out");
+
+        processor().process(assets.toFile(), context(assets, output, Set.of(), true));
+
+        AtlasRegionReader.AtlasRegions regions = new AtlasRegionReader()
+                .read(output.resolve("fonts/fonts.atlas").toFile());
+        assertTrue(regions.names().containsAll(Set.of("first", "second")));
+        assertFalse(regions.names().contains("shared"));
+    }
+
     private WeaveProcessor processor() {
         return new WeaveProcessor(new DirectoryScanner(), new StagingPreparer(), new FontPageCopier(),
                 new TexturePackerService(), new SkinFileHandler(new SkinJsonService()), new SkinValidator());
@@ -92,17 +149,28 @@ class WeaveProcessorTest {
         return buffer.toString(StandardCharsets.UTF_8);
     }
 
-    private void writeFont(Path file, String pageFile) throws IOException {
+    private void writeFont(Path file, String... pageFiles) throws IOException {
+        StringBuilder pageLines = new StringBuilder();
+        for (int i = 0; i < pageFiles.length; i++) {
+            if (i > 0) {
+                pageLines.append('\n');
+            }
+            pageLines.append("page id=").append(i).append(" file=\"").append(pageFiles[i]).append('"');
+        }
         Files.writeString(file, """
                 info face="Test" size=8 bold=0 italic=0 charset="" unicode=0 stretchH=100 smooth=1 aa=1 padding=0,0,0,0 spacing=0,0
-                common lineHeight=8 base=8 scaleW=8 scaleH=8 pages=1 packed=0
-                page id=0 file="%s"
+                common lineHeight=8 base=8 scaleW=8 scaleH=8 pages=%d packed=0
+                %s
                 chars count=0
-                """.formatted(pageFile), StandardCharsets.UTF_8);
+                """.formatted(pageFiles.length, pageLines), StandardCharsets.UTF_8);
     }
 
     private void writePng(Path file) throws IOException {
-        BufferedImage image = new BufferedImage(8, 8, BufferedImage.TYPE_INT_ARGB);
+        writePng(file, 8);
+    }
+
+    private void writePng(Path file, int size) throws IOException {
+        BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics = image.createGraphics();
         try {
             graphics.setColor(Color.RED);

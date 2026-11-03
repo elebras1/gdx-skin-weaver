@@ -3,6 +3,7 @@ package io.github.elebras1.gdxskinweaver.util;
 import org.gradle.api.InvalidUserDataException;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -41,11 +42,29 @@ public final class SkinWeaverPaths {
      * skins there would overwrite or delete the source assets.
      */
     public static void requireSafeOutputDir(File assetsDir, File outputDir) {
-        Path assets = assetsDir.toPath().toAbsolutePath().normalize();
-        Path output = outputDir.toPath().toAbsolutePath().normalize();
+        Path assets = realPath(assetsDir.toPath());
+        Path output = realPath(outputDir.toPath());
         if (assets.startsWith(output)) {
             throw new InvalidUserDataException("skinWeaver.outputDir (" + output + ") must not be the assets directory ("
                     + assets + ") or one of its parents.");
+        }
+    }
+
+    /**
+     * Resolves symbolic links in the existing part of the path, then appends the missing segments. A plain
+     * {@code normalize()} is not enough: an output directory can reach the assets through a symlink.
+     */
+    private static Path realPath(Path path) {
+        Path absolute = path.toAbsolutePath().normalize();
+        try {
+            return absolute.toRealPath();
+        } catch (IOException e) {
+            Path parent = absolute.getParent();
+            if (parent == null) {
+                return absolute;
+            }
+            Path fileName = absolute.getFileName();
+            return realPath(parent).resolve(fileName).normalize();
         }
     }
 }

@@ -78,8 +78,25 @@ public class FontPageResolver {
 
         boolean multiPage = pageCount > 1;
         pages.sort(Comparator.comparingInt(FontPage::id));
+        if (multiPage && !pages.isEmpty() && !hasContiguousPageIds(pages, pageCount)) {
+            warn("Font '" + font.getName() + "' has non-contiguous page ids: a libGDX Skin looks for '"
+                    + AssetFileUtils.getBaseName(font) + "_0', '" + AssetFileUtils.getBaseName(font)
+                    + "_1', ... and would not load every page. Rebuild the .fnt with consecutive page ids.");
+        }
         pages.replaceAll(page -> new FontPage(page.font(), page.id(), page.file(), multiPage));
         return pages;
+    }
+
+    private boolean hasContiguousPageIds(List<FontPage> pages, int pageCount) {
+        if (pages.size() != pageCount) {
+            return false;
+        }
+        for (int i = 0; i < pages.size(); i++) {
+            if (pages.get(i).id() != i) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private File resolvePageFile(File font, String fileName) {

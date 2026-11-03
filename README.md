@@ -44,8 +44,9 @@ Directories listed in `excludedDirs` are removed from the `weaveSkins` inputs, s
 invalidate the task. Use `""` or `"."` to exclude the assets root itself: its own files are ignored, while its
 subdirectories are still processed.
 
-`weaveSkins` and `cleanSkins` refuse an `outputDir` that is the assets directory or one of its parents. An output
-directory inside the assets directory, such as the default `assets/skins`, is allowed.
+`weaveSkins` and `cleanSkins` refuse an `outputDir` that is the assets directory or one of its parents. Symbolic
+links are resolved before the check. An output directory inside the assets directory, such as the default
+`assets/skins`, is allowed.
 
 Run the task:
 
@@ -183,10 +184,15 @@ extensions.configure<io.github.elebras1.gdxskinweaver.SkinWeaverExtension>("skin
 
 Packed pages use the names a libGDX `Skin` looks up: a single-page font keeps the font name as its
 region, while a multi-page font uses `<font>_<page id>` for every page (`chinese_60_0`, `chinese_60_1`, ...).
+Page ids that are not consecutive from `0` are reported, because `Skin#getRegions` stops at the first missing
+index.
 
 When `packFontPages` is disabled and a font has the same name as its folder, the atlas page
 (`<folder>.png`) would be loaded as the font texture. The plugin reports a warning; rename the font or
 the folder, or enable `packFontPages`.
+
+If another image already uses the name of a packed font page region, the font page is kept and the plugin
+reports a warning.
 
 Missing page files referenced by a `.fnt` are reported as warnings.
 

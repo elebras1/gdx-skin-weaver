@@ -36,6 +36,28 @@ class GdxSkinWeaverTaskTest {
         assertEquals(Set.of("root.png", "ui/button.png"), inputFiles(task, assets));
     }
 
+    @Test
+    void removesNestedExcludedDirectoriesFromInputFiles() throws IOException {
+        Path assets = Files.createDirectories(tempDir.resolve("assets"));
+        write(assets.resolve("ui/button.png"));
+        write(assets.resolve("ui/legacy/old.png"));
+        GdxSkinWeaverTask task = createTask(assets, tempDir.resolve("out"));
+
+        task.getExcludedDirs().set(Set.of("ui/legacy"));
+
+        assertEquals(Set.of("ui/button.png"), inputFiles(task, assets));
+    }
+
+    @Test
+    void removesOutputDirectoryFromInputFiles() throws IOException {
+        Path assets = Files.createDirectories(tempDir.resolve("assets"));
+        write(assets.resolve("ui/button.png"));
+        write(assets.resolve("generated/ui.atlas"));
+        GdxSkinWeaverTask task = createTask(assets, assets.resolve("generated"));
+
+        assertEquals(Set.of("ui/button.png"), inputFiles(task, assets));
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"", "."})
     void removesRootFilesButKeepsSubdirectoriesWhenRootIsExcluded(String excludedDir) throws IOException {

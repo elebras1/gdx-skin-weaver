@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class GdxSkinWeaverPluginTest {
@@ -18,23 +19,37 @@ class GdxSkinWeaverPluginTest {
 
     @Test
     void weaveSkinsRefusesOutputDirectoryEqualToAssets() throws IOException {
-        assertOutputDirGuard("weaveSkins");
+        assertOutputDirGuard("weaveSkins", "layout.projectDirectory.dir(\"assets\")");
     }
 
     @Test
     void cleanSkinsRefusesOutputDirectoryEqualToAssets() throws IOException {
-        assertOutputDirGuard("cleanSkins");
+        assertOutputDirGuard("cleanSkins", "layout.projectDirectory.dir(\"assets\")");
     }
 
-    private void assertOutputDirGuard(String task) throws IOException {
-        Files.writeString(projectDir.resolve("settings.gradle"), "rootProject.name = 'skin-weaver-guard'\n");
-        Files.createDirectories(projectDir.resolve("assets"));
-        Files.writeString(projectDir.resolve("build.gradle"), """
-                plugins { id 'io.github.elebras1.gdx-skin-weaver' }
-                skinWeaver {
-                    outputDir.set(layout.projectDirectory.dir("assets"))
-                }
-                """);
+    @Test
+    void cleanSkinsRefusesOutputDirectoryThatContainsAssets() throws IOException {
+        assertOutputDirGuard("cleanSkins", "layout.projectDirectory");
+    }
+
+    @Test
+    void cleanSkinsDeletesTheConfiguredOutputDirectory() throws IOException {
+        writeBuild("layout.projectDirectory.dir(\"assets/skins\")");
+        Path output = projectDir.resolve("assets/skins");
+        Files.createDirectories(output);
+        Files.writeString(output.resolve("stale.json"), "{}");
+
+        GradleRunner.create()
+                .withProjectDir(projectDir.toFile())
+                .withArguments("cleanSkins")
+                .withPluginClasspath()
+                .build();
+
+        assertFalse(Files.exists(output));
+    }
+
+    private void assertOutputDirGuard(String task, String outputExpression) throws IOException {
+        writeBuild(outputExpression);
 
         BuildResult result = GradleRunner.create()
                 .withProjectDir(projectDir.toFile())
@@ -43,5 +58,16 @@ class GdxSkinWeaverPluginTest {
                 .buildAndFail();
 
         assertTrue(result.getOutput().contains("must not be the assets directory"), result.getOutput());
+    }
+
+    private void writeBuild(String outputExpression) throws IOException {
+        Files.writeString(projectDir.resolve("settings.gradle"), "rootProject.name = 'skin-weaver-guard'\n");
+        Files.createDirectories(projectDir.resolve("assets"));
+        Files.writeString(projectDir.resolve("build.gradle"), """
+                plugins { id 'io.github.elebras1.gdx-skin-weaver' }
+                skinWeaver {
+                    outputDir.set(%s)
+                }
+                """.formatted(outputExpression));
     }
 }
