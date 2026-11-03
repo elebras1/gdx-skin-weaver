@@ -48,6 +48,7 @@ public class GdxSkinWeaver implements Plugin<Project> {
             skinWeaverTask.getGenerateNames().set(extension.getNames().getEnabled());
             skinWeaverTask.getNamesPackage().set(extension.getNames().getPackageName());
             skinWeaverTask.getNamesClassName().set(extension.getNames().getClassName());
+            skinWeaverTask.getSkinCatalog().set(extension.getNames().getSkinCatalog());
 
             if (!extension.getNames().getOutputDir().isPresent()) {
                 extension.getNames().getOutputDir().set(p.getLayout().getBuildDirectory().dir("generated/sources/skinWeaver/java"));

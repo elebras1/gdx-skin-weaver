@@ -33,11 +33,21 @@ public class SkinNamesGenerator {
     private final AtlasRegionReader atlasRegionReader = new AtlasRegionReader();
 
     public void generate(File skinsDir, File outputDir, String packageName, String className, String atlasExtension) {
+        generate(skinsDir, outputDir, packageName, className, atlasExtension, false, "");
+    }
+
+    public void generate(File skinsDir, File outputDir, String packageName, String className, String atlasExtension,
+                         boolean skinCatalog) {
+        generate(skinsDir, outputDir, packageName, className, atlasExtension, skinCatalog, "");
+    }
+
+    public void generate(File skinsDir, File outputDir, String packageName, String className, String atlasExtension,
+                         boolean skinCatalog, String skinCatalogPrefix) {
         validatePackage(packageName);
         validateClassName(className);
 
         List<SkinModel> models = collect(skinsDir.toPath(), atlasExtension(atlasExtension));
-        String source = render(packageName, className, models);
+        String source = render(packageName, className, models, skinCatalog, skinCatalogPrefix);
         Path target = outputDir.toPath()
                 .resolve(packageName.replace('.', '/'))
                 .resolve(className + ".java");
@@ -86,7 +96,8 @@ public class SkinNamesGenerator {
             }
 
             String baseName = uniqueName(skinClassName(skinsDir, skinFile), usedClassNames);
-            SkinModel model = new SkinModel(baseName);
+            String skinPath = skinsDir.relativize(skinFile).toString().replace('\\', '/');
+            SkinModel model = new SkinModel(baseName, skinPath);
             readResources(root, model);
             readAtlas(skinFile, atlasExtension, model);
 
@@ -172,12 +183,17 @@ public class SkinNamesGenerator {
         return name;
     }
 
-    private String render(String packageName, String className, List<SkinModel> models) {
+    private String render(String packageName, String className, List<SkinModel> models, boolean skinCatalog,
+                          String skinCatalogPrefix) {
         StringBuilder source = new StringBuilder();
         source.append("package ").append(packageName).append(";\n\n");
         source.append("public final class ").append(className).append(" {\n");
         source.append("    private ").append(className).append("() {\n");
         source.append("    }\n");
+
+        if (skinCatalog) {
+            appendSkinCatalog(source, models, normalizePrefix(skinCatalogPrefix));
+        }
 
         for (SkinModel model : models) {
             source.append("\n    public static final class ").append(model.className).append(" {\n");
@@ -191,6 +207,51 @@ public class SkinNamesGenerator {
 
         source.append("}\n");
         return source.toString();
+    }
+
+    private void appendSkinCatalog(StringBuilder source, List<SkinModel> models, String prefix) {
+        if (models.isEmpty()) {
+            return;
+        }
+
+        SortedMap<String, String> entries = new TreeMap<>();
+        Set<String> usedConstants = new HashSet<>();
+        for (SkinModel model : models) {
+            String baseName = model.className.endsWith("Skin")
+                    ? model.className.substring(0, model.className.length() - "Skin".length())
+                    : model.className;
+            if (baseName.isEmpty()) {
+                baseName = model.className;
+            }
+            entries.put(uniqueConstant(baseName, usedConstants), prefix + model.skinPath);
+        }
+
+        source.append("\n    public static final class Skins {\n");
+        for (Map.Entry<String, String> entry : entries.entrySet()) {
+            source.append("        public static final String ")
+                    .append(entry.getKey())
+                    .append(" = \"")
+                    .append(escape(entry.getValue()))
+                    .append("\";\n");
+        }
+        source.append("    }\n");
+    }
+
+    private String normalizePrefix(String prefix) {
+        if (prefix == null || prefix.isBlank()) {
+            return "";
+        }
+        String value = prefix.trim().replace('\\', '/');
+        while (value.startsWith("./")) {
+            value = value.substring(2);
+        }
+        while (value.startsWith("/")) {
+            value = value.substring(1);
+        }
+        while (value.endsWith("/")) {
+            value = value.substring(0, value.length() - 1);
+        }
+        return value.isEmpty() ? "" : value + "/";
     }
 
     private void appendStyles(StringBuilder source, SortedMap<String, SortedSet<String>> styles, int indent) {
@@ -346,14 +407,16 @@ public class SkinNamesGenerator {
 
     private static final class SkinModel {
         private final String className;
+        private final String skinPath;
         private final SortedSet<String> drawables = new TreeSet<>();
         private final SortedSet<String> indexedRegions = new TreeSet<>();
         private final SortedSet<String> fonts = new TreeSet<>();
         private final SortedSet<String> colors = new TreeSet<>();
         private final SortedMap<String, SortedSet<String>> styles = new TreeMap<>();
 
-        private SkinModel(String className) {
+        private SkinModel(String className, String skinPath) {
             this.className = className;
+            this.skinPath = skinPath;
         }
 
         private boolean isEmpty() {

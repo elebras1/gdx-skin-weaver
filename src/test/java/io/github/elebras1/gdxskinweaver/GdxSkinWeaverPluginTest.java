@@ -48,6 +48,37 @@ class GdxSkinWeaverPluginTest {
         assertFalse(Files.exists(output));
     }
 
+    @Test
+    void generatesSkinCatalogWhenEnabled() throws IOException {
+        Files.writeString(projectDir.resolve("settings.gradle"), "rootProject.name = 'skin-weaver-catalog'\n");
+        Path skin = projectDir.resolve("assets/ui/ui_skin.json");
+        Files.createDirectories(skin.getParent());
+        Files.writeString(skin, """
+                {
+                  "com.badlogic.gdx.scenes.scene2d.ui.Button$ButtonStyle": {
+                    "ok_btn": {"up": "ok_btn"}
+                  }
+                }
+                """);
+        Files.writeString(projectDir.resolve("build.gradle"), """
+                plugins { id 'io.github.elebras1.gdx-skin-weaver' }
+                skinWeaver {
+                    names.skinCatalog.set(true)
+                }
+                """);
+
+        GradleRunner.create()
+                .withProjectDir(projectDir.toFile())
+                .withArguments("weaveSkins")
+                .withPluginClasspath()
+                .build();
+
+        String source = Files.readString(projectDir.resolve(
+                "build/generated/sources/skinWeaver/java/io/github/elebras1/gdxskinweaver/generated/SkinNames.java"));
+        assertTrue(source.contains("public static final class Skins"));
+        assertTrue(source.contains("public static final String UI = \"skins/ui/ui.json\";"));
+    }
+
     private void assertOutputDirGuard(String task, String outputExpression) throws IOException {
         writeBuild(outputExpression);
 

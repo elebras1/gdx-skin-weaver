@@ -14,6 +14,7 @@ Gradle plugin that packs libGDX texture atlases and generates skin JSON from ass
 - Exposes the texture packer settings (page size, padding, filters, ...).
 - Can keep font page images out of the folder atlas.
 - Generates an HTML preview report of drawables, styles, fonts and colors.
+- Can generate a catalog of all skin JSON paths (disabled by default).
 - Keeps the output directory out of the task inputs so `weaveSkins` can be up-to-date.
 - Excludes the configured `excludedDirs` from the task inputs.
 - Supports the Gradle build cache for `weaveSkins`.
@@ -143,6 +144,7 @@ extensions.configure<io.github.elebras1.gdxskinweaver.SkinWeaverExtension>("skin
     names.packageName.set("com.example.ui.generated")
     names.className.set("SkinNames")
     names.outputDir.set(layout.buildDirectory.dir("generated/sources/skinWeaver/java"))
+    names.skinCatalog.set(true) // disabled by default
 }
 ```
 
@@ -171,6 +173,22 @@ compileJava.dependsOn rootProject.tasks.named("weaveSkins")
 ```
 
 Use `names.enabled.set(false)` to disable generation.
+
+### Skin catalog
+`names.skinCatalog` is disabled by default. When enabled, `SkinNames` also contains a `Skins` class with
+the path of every generated skin JSON. Paths are relative to the assets directory when `outputDir` is
+inside it, so they can be passed directly to `Gdx.files.internal`; otherwise they stay relative to the
+skins output directory.
+
+```java
+SkinNames.Skins.FONTS      // "skins/fonts/fonts.json"
+SkinNames.Skins.SETTINGS   // "skins/settings/settings.json"
+SkinNames.Skins.UI         // "skins/ui/ui.json"
+SkinNames.Skins.UI_ECONOMY // "skins/ui/economy/economy.json"
+```
+
+Skins without any generated resource are not listed. The catalog only contains plain `String` constants;
+there is no generated `ALL` collection.
 
 ### Font pages
 By default, font page images are packed into the folder atlas. When the atlas is not used for

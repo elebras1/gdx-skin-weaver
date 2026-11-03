@@ -100,6 +100,9 @@ public abstract class GdxSkinWeaverTask extends DefaultTask {
     @Input
     public abstract Property<String> getNamesClassName();
 
+    @Input
+    public abstract Property<Boolean> getSkinCatalog();
+
     @OutputDirectory
     public abstract DirectoryProperty getNamesOutputDir();
 
@@ -121,6 +124,7 @@ public abstract class GdxSkinWeaverTask extends DefaultTask {
         getGenerateNames().convention(true);
         getNamesPackage().convention("io.github.elebras1.gdxskinweaver.generated");
         getNamesClassName().convention("SkinNames");
+        getSkinCatalog().convention(false);
         getNamesOutputDir().convention(getProject().getLayout().getBuildDirectory().dir("generated/sources/skinWeaver/java"));
     }
 
@@ -151,10 +155,24 @@ public abstract class GdxSkinWeaverTask extends DefaultTask {
         if (this.getGenerateNames().get()) {
             this.skinNamesGenerator.generate(outputDir, this.getNamesOutputDir().get().getAsFile(),
                     this.getNamesPackage().get(), this.getNamesClassName().get(),
-                    this.getPackerOptions().get().getOrDefault("atlasExtension", ".atlas"));
+                    this.getPackerOptions().get().getOrDefault("atlasExtension", ".atlas"),
+                    this.getSkinCatalog().get(), skinCatalogPrefix(assetsDir, outputDir));
         } else {
             this.skinNamesGenerator.clean(this.getNamesOutputDir().get().getAsFile(),
                     this.getNamesPackage().get(), this.getNamesClassName().get());
         }
+    }
+
+    /**
+     * Catalog paths are relative to the assets directory when the skins output directory is inside it, so they
+     * can be passed directly to {@code Gdx.files.internal}. Otherwise they stay relative to the output directory.
+     */
+    private String skinCatalogPrefix(File assetsDir, File outputDir) {
+        Path assets = assetsDir.toPath().toAbsolutePath().normalize();
+        Path output = outputDir.toPath().toAbsolutePath().normalize();
+        if (output.equals(assets) || !output.startsWith(assets)) {
+            return "";
+        }
+        return assets.relativize(output).toString().replace('\\', '/') + "/";
     }
 }

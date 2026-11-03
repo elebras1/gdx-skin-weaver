@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -79,6 +80,14 @@ class GdxSkinWeaverTaskTest {
         InvalidUserDataException exception = assertThrows(InvalidUserDataException.class, task::weave);
 
         assertTrue(exception.getMessage().contains("must not be the assets directory"));
+    }
+
+    @Test
+    void skinCatalogIsDisabledByDefault() throws IOException {
+        Path assets = Files.createDirectories(tempDir.resolve("assets"));
+        GdxSkinWeaverTask task = createTask(assets, tempDir.resolve("out"));
+
+        assertFalse(task.getSkinCatalog().get());
     }
 
     @Test

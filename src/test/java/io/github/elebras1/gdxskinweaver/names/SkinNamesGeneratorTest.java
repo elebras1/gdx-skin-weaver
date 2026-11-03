@@ -87,6 +87,54 @@ class SkinNamesGeneratorTest {
         assertTrue(source.contains("public static final class UiEconomySkin"));
         assertTrue(source.contains("ECO_BACK_BTN"));
         assertFalse(source.contains("AssetsSkin"));
+        assertFalse(source.contains("public static final class Skins"));
+    }
+
+    @Test
+    void generatesSkinCatalogWithRelativeJsonPaths() throws IOException {
+        Path skins = tempDir.resolve("skins");
+        write(skins.resolve("ui/ui.json"), """
+                {
+                  "com.badlogic.gdx.scenes.scene2d.ui.Button$ButtonStyle": {
+                    "ok_btn": {"up": "ok_btn"}
+                  }
+                }
+                """);
+        write(skins.resolve("ui/economy/economy.json"), """
+                {
+                  "com.badlogic.gdx.scenes.scene2d.ui.Button$ButtonStyle": {
+                    "back_btn": {"up": "back_btn"}
+                  }
+                }
+                """);
+        write(skins.resolve("fonts/fonts.json"), """
+                {
+                  "com.badlogic.gdx.graphics.g2d.BitmapFont": {
+                    "impact": {"file": "impact.fnt"}
+                  }
+                }
+                """);
+        write(skins.resolve("settings.json"), """
+                {
+                  "com.badlogic.gdx.scenes.scene2d.ui.Button$ButtonStyle": {
+                    "close_btn": {"up": "close_btn"}
+                  }
+                }
+                """);
+        write(skins.resolve("empty/empty.json"), "{}");
+        Path out = tempDir.resolve("out");
+
+        new SkinNamesGenerator().generate(skins.toFile(), out.toFile(),
+                "com.example.ui", "SkinNames", ".atlas", true, "skins\\");
+
+        String source = Files.readString(out.resolve("com/example/ui/SkinNames.java"), StandardCharsets.UTF_8);
+        assertTrue(source.contains("public static final class Skins"));
+        assertTrue(source.contains("public static final String FONTS = \"skins/fonts/fonts.json\";"));
+        assertTrue(source.contains("public static final String UI = \"skins/ui/ui.json\";"));
+        assertTrue(source.contains("public static final String UI_ECONOMY = \"skins/ui/economy/economy.json\";"));
+        assertTrue(source.contains("public static final String SETTINGS = \"skins/settings.json\";"));
+        assertFalse(source.contains("EMPTY"));
+        assertFalse(source.contains(" ALL ="));
     }
 
     @Test
