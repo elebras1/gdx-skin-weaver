@@ -33,8 +33,9 @@ public class TexturePackerService {
                 ? ".atlas" : settings.atlasExtension;
         deleteQuietly(new File(targetDir, atlasName + atlasExtension));
 
+        String pageSuffix = pageSuffixPattern(atlasName);
         for (String imageExtension : List.of(".png", ".jpg", ".jpeg", ".cbt")) {
-            String pattern = Pattern.quote(atlasName) + "(-\\d+)?" + Pattern.quote(imageExtension);
+            String pattern = Pattern.quote(atlasName) + pageSuffix + Pattern.quote(imageExtension);
             File[] pages = targetDir.listFiles((dir, name) -> name.matches(pattern));
             if (pages != null) {
                 for (File page : pages) {
@@ -42,6 +43,18 @@ public class TexturePackerService {
                 }
             }
         }
+    }
+
+    /**
+     * Mirrors TexturePacker page naming: pages after the first are named {@code atlas2}, {@code atlas3}, ...,
+     * with a dash only when the atlas name ends with a digit (or a digit followed by 'x'): {@code atlas1-2}.
+     */
+    private static String pageSuffixPattern(String atlasName) {
+        int length = atlasName.length();
+        char last = length == 0 ? ' ' : atlasName.charAt(length - 1);
+        boolean dashed = Character.isDigit(last)
+                || (length > 3 && last == 'x' && Character.isDigit(atlasName.charAt(length - 2)));
+        return dashed ? "(-\\d+)?" : "(\\d+)?";
     }
 
     private void deleteQuietly(File file) {
