@@ -39,6 +39,28 @@ class FontPageResolverTest {
         assertTrue(pages.isEmpty());
     }
 
+    @Test
+    void namesMultiPageFontRegionsByPageId() throws IOException {
+        Files.writeString(tempDir.resolve("big1.png"), "", StandardCharsets.UTF_8);
+        Files.writeString(tempDir.resolve("big2.png"), "", StandardCharsets.UTF_8);
+        File font = writeFont("page id=1 file=\"big2.png\"\npage id=0 file=\"big1.png\"");
+
+        List<FontPageResolver.FontPage> pages = new FontPageResolver().resolvePages(List.of(font));
+
+        assertEquals(List.of("font_0", "font_1"), pages.stream().map(FontPageResolver.FontPage::regionName).toList());
+        assertEquals("big1.png", pages.get(0).file().getName());
+    }
+
+    @Test
+    void namesSinglePageFontRegionByFontName() throws IOException {
+        Files.writeString(tempDir.resolve("other.png"), "", StandardCharsets.UTF_8);
+        File font = writeFont("page id=0 file=\"other.png\"");
+
+        List<FontPageResolver.FontPage> pages = new FontPageResolver().resolvePages(List.of(font));
+
+        assertEquals(List.of("font"), pages.stream().map(FontPageResolver.FontPage::regionName).toList());
+    }
+
     private File writeFont(String pageLine) throws IOException {
         Path font = tempDir.resolve("font.fnt");
         String content = """

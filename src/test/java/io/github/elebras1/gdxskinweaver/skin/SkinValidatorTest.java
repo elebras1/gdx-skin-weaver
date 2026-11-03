@@ -111,6 +111,34 @@ class SkinValidatorTest {
         assertTrue(warnings.stream().anyMatch(warning -> warning.contains("No atlas found")));
     }
 
+    @Test
+    void resolvesIndexedRegionsBySkinName() throws IOException {
+        Path atlas = writeAtlas("""
+                ui.png
+                size:64,64
+                format:RGBA8888
+                filter:Nearest,Nearest
+                repeat:none
+
+                load
+                index:1
+                bounds:0,0,10,10
+                """);
+        Path skin = writeSkin("""
+                {
+                  "com.badlogic.gdx.scenes.scene2d.ui.Button$ButtonStyle": {
+                    "ok": {"up": "load_1"},
+                    "ko": {"up": "load"}
+                  }
+                }
+                """);
+
+        List<String> warnings = new SkinValidator().validate(skin.toFile(), atlas.toFile());
+
+        assertFalse(warnings.stream().anyMatch(warning -> warning.contains("'load_1'")));
+        assertTrue(warnings.stream().anyMatch(warning -> warning.contains("missing drawable 'load'")));
+    }
+
     private Path writeAtlas(String content) throws IOException {
         Path atlas = tempDir.resolve("ui.atlas");
         Files.writeString(atlas, content, StandardCharsets.UTF_8);

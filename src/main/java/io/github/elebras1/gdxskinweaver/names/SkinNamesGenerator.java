@@ -144,7 +144,9 @@ public class SkinNamesGenerator {
         }
 
         try {
-            model.drawables.addAll(atlasRegionReader.read(atlasFile.toFile()).names());
+            AtlasRegionReader.AtlasRegions regions = atlasRegionReader.read(atlasFile.toFile());
+            model.drawables.addAll(regions.names());
+            model.indexedRegions.addAll(regions.indexedNames());
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read atlas " + atlasFile, e);
         }
@@ -180,6 +182,7 @@ public class SkinNamesGenerator {
         for (SkinModel model : models) {
             source.append("\n    public static final class ").append(model.className).append(" {\n");
             appendValues(source, "Drawables", model.drawables, 8);
+            appendValues(source, "IndexedRegions", model.indexedRegions, 8);
             appendStyles(source, model.styles, 8);
             appendValues(source, "Fonts", model.fonts, 8);
             appendValues(source, "Colors", model.colors, 8);
@@ -344,6 +347,7 @@ public class SkinNamesGenerator {
     private static final class SkinModel {
         private final String className;
         private final SortedSet<String> drawables = new TreeSet<>();
+        private final SortedSet<String> indexedRegions = new TreeSet<>();
         private final SortedSet<String> fonts = new TreeSet<>();
         private final SortedSet<String> colors = new TreeSet<>();
         private final SortedMap<String, SortedSet<String>> styles = new TreeMap<>();

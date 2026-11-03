@@ -11,6 +11,7 @@ import io.github.elebras1.gdxskinweaver.skin.SkinFileHandler;
 import io.github.elebras1.gdxskinweaver.skin.SkinGenerationConfig;
 import io.github.elebras1.gdxskinweaver.skin.SkinValidator;
 import io.github.elebras1.gdxskinweaver.staging.StagingPreparer;
+import io.github.elebras1.gdxskinweaver.util.SkinWeaverPaths;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileTree;
@@ -46,14 +47,24 @@ public abstract class GdxSkinWeaverTask extends DefaultTask {
         File outputDir = getOutputDir().get().getAsFile();
         Path assetsPath = assetsDir.toPath().toAbsolutePath().normalize();
         Path outputPath = outputDir.toPath().toAbsolutePath().normalize();
+        Set<String> excludedDirs = SkinWeaverPaths.normalizeExcludedDirs(getExcludedDirs().get());
 
-        if (outputPath.startsWith(assetsPath)) {
-            String relativeOutput = assetsPath.relativize(outputPath).toString().replace('\\', '/');
-            if (!relativeOutput.isEmpty()) {
-                return getProject().fileTree(assetsDir).matching(pattern -> pattern.exclude(relativeOutput + "/**"));
+        return getProject().fileTree(assetsDir).matching(pattern -> {
+            if (outputPath.startsWith(assetsPath)) {
+                String relativeOutput = assetsPath.relativize(outputPath).toString().replace('\\', '/');
+                if (!relativeOutput.isEmpty()) {
+                    pattern.exclude(relativeOutput + "/**");
+                }
             }
-        }
-        return getProject().fileTree(assetsDir);
+            for (String excludedDir : excludedDirs) {
+                if (excludedDir.isEmpty()) {
+                    // The assets root is excluded: ignore its own files but keep its subdirectories.
+                    pattern.exclude(element -> !element.isDirectory() && element.getRelativePath().getSegments().length == 1);
+                } else {
+                    pattern.exclude(excludedDir + "/**");
+                }
+            }
+        });
     }
 
     @OutputDirectory
@@ -117,14 +128,12 @@ public abstract class GdxSkinWeaverTask extends DefaultTask {
     public void weave() {
         File assetsDir = this.getAssetsDir().get().getAsFile();
         File outputDir = this.getOutputDir().get().getAsFile();
+        SkinWeaverPaths.requireSafeOutputDir(assetsDir, outputDir);
 
         Path assetsRoot = assetsDir.toPath();
         String relativeOutput = assetsRoot.relativize(outputDir.toPath()).toString().replace('\\', '/');
 
-        Set<String> excludedDirsWithOutput = new HashSet<>();
-        for (String excludedDir : this.getExcludedDirs().get()) {
-            excludedDirsWithOutput.add(excludedDir.replace('\\', '/'));
-        }
+        Set<String> excludedDirsWithOutput = new HashSet<>(SkinWeaverPaths.normalizeExcludedDirs(this.getExcludedDirs().get()));
         excludedDirsWithOutput.add(relativeOutput);
 
         SkinGenerationConfig skinGenerationConfig = new SkinGenerationConfig(

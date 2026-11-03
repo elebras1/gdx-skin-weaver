@@ -7,9 +7,12 @@ import io.github.elebras1.gdxskinweaver.skin.SkinGenerationConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.Reader;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -96,6 +99,29 @@ class SkinJsonServiceTest {
     }
 
     @Test
+    void skipsColorStyleWhenAFontAlreadyUsesItsName() throws IOException {
+        Path existing = writeExistingSkin("""
+                {
+                  "com.badlogic.gdx.graphics.Color": {
+                    "red": {"r": 1, "g": 0, "b": 0, "a": 1}
+                  }
+                }
+                """);
+        Path target = tempDir.resolve("fonts.json");
+        List<File> fonts = List.of(font("arial_14.fnt"), font("arial_14_red.fnt"));
+
+        String err = captureErr(() -> new SkinJsonService().merge(target.toFile(), existing.toFile(), fonts,
+                Map.of(), Map.of(), new SkinGenerationConfig(true, List.of(), null, true, true)));
+
+        JsonObject labels = labels(target);
+        JsonObject collision = labels.get("arial_14_red").asObject();
+        assertEquals("arial_14_red", collision.get("font").asString());
+        assertNull(collision.get("fontColor"));
+        assertTrue(err.contains("Label style 'arial_14_red'"));
+        assertTrue(err.contains("the font 'arial_14_red' already uses this name"));
+    }
+
+    @Test
     void canDisableLabelStyles() throws IOException {
         Path existing = writeExistingSkin("""
                 {
@@ -169,5 +195,24 @@ class SkinJsonServiceTest {
         try (Reader reader = Files.newBufferedReader(target, StandardCharsets.UTF_8)) {
             return Json.parse(reader).asObject();
         }
+    }
+
+    private String captureErr(ThrowingRunnable action) {
+        PrintStream original = System.err;
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        System.setErr(new PrintStream(buffer, true, StandardCharsets.UTF_8));
+        try {
+            action.run();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        } finally {
+            System.setErr(original);
+        }
+        return buffer.toString(StandardCharsets.UTF_8);
+    }
+
+    @FunctionalInterface
+    private interface ThrowingRunnable {
+        void run() throws IOException;
     }
 }

@@ -131,6 +131,36 @@ class SkinNamesGeneratorTest {
         assertFalse(Files.exists(out.resolve("com/example/ui/SkinNames.java")));
     }
 
+    @Test
+    void usesSkinNamesForIndexedRegions() throws IOException {
+        Path skins = tempDir.resolve("skins");
+        write(skins.resolve("screens/screens.json"), "{}");
+        write(skins.resolve("screens/screens.atlas"), """
+                screens.png
+                size:64,64
+                format:RGBA8888
+                filter:Nearest,Nearest
+                repeat:none
+
+                load
+                index:1
+                bounds:0,0,10,10
+
+                load
+                index:2
+                bounds:10,0,10,10
+                """);
+        Path out = tempDir.resolve("out");
+
+        new SkinNamesGenerator().generate(skins.toFile(), out.toFile(), "com.example.ui", "SkinNames", ".atlas");
+
+        String source = Files.readString(out.resolve("com/example/ui/SkinNames.java"));
+        assertTrue(source.contains("public static final String LOAD_1 = \"load_1\";"));
+        assertTrue(source.contains("public static final String LOAD_2 = \"load_2\";"));
+        assertTrue(source.contains("public static final class IndexedRegions"));
+        assertTrue(source.contains("public static final String LOAD = \"load\";"));
+    }
+
     private void write(Path path, String content) throws IOException {
         Files.createDirectories(path.getParent());
         Files.writeString(path, content, StandardCharsets.UTF_8);

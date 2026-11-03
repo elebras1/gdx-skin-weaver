@@ -7,6 +7,7 @@ Gradle plugin that packs libGDX texture atlases and generates skin JSON from ass
 - Generates or merges `*_skin.json` files with bitmap fonts, button/toggle styles and label styles.
 - Generates a `LabelStyle` for every bitmap font and a `<font>_<color>` style for every color declared in the folder skin.
 - Copies `.fnt` files and their referenced pages to the output.
+- Packs multi-page fonts under the region names a libGDX `Skin` looks up (`<font>_0`, `<font>_1`, ...).
 - Supports button (`*_btn`), toggle (`*_tgl`) and nine-patch (`.9.png`) conventions.
 - Detects duplicate region names and prefers the nine-patch version of an image.
 - Validates hand-written skin JSON and reports missing drawables, fonts, colors and duplicate atlas regions.
@@ -14,8 +15,10 @@ Gradle plugin that packs libGDX texture atlases and generates skin JSON from ass
 - Can keep font page images out of the folder atlas.
 - Generates an HTML preview report of drawables, styles, fonts and colors.
 - Keeps the output directory out of the task inputs so `weaveSkins` can be up-to-date.
+- Excludes the configured `excludedDirs` from the task inputs.
 - Supports the Gradle build cache for `weaveSkins`.
 - Provides a `cleanSkins` task for the generated skins directory.
+- Refuses an output directory that would overwrite or delete the assets directory.
 
 ## Installation
 In your `build.gradle.kts`:
@@ -36,6 +39,13 @@ extensions.configure<io.github.elebras1.gdxskinweaver.SkinWeaverExtension>("skin
     excludedDirs.set(listOf("ui/legacy"))
 }
 ```
+
+Directories listed in `excludedDirs` are removed from the `weaveSkins` inputs, so changing their files does not
+invalidate the task. Use `""` or `"."` to exclude the assets root itself: its own files are ignored, while its
+subdirectories are still processed.
+
+`weaveSkins` and `cleanSkins` refuse an `outputDir` that is the assets directory or one of its parents. An output
+directory inside the assets directory, such as the default `assets/skins`, is allowed.
 
 Run the task:
 
@@ -62,7 +72,8 @@ the standard Gradle `clean` task.
 
 ### Label styles
 Label style generation is enabled by default. Colors are read from the `com.badlogic.gdx.graphics.Color`
-block of the folder's `*_skin.json`. Existing `LabelStyle` entries are never overwritten.
+block of the folder's `*_skin.json`. Existing `LabelStyle` entries are never overwritten. A generated
+`<font>_<color>` style is skipped with a warning when another font already uses that name.
 
 ```kotlin
 extensions.configure<io.github.elebras1.gdxskinweaver.SkinWeaverExtension>("skinWeaver") {
@@ -138,10 +149,16 @@ The generated structure follows the skin folders:
 
 ```java
 SkinNames.UiSkin.Drawables.BG_PROVINCE
+SkinNames.UiSkin.Drawables.LOAD_1
+SkinNames.UiSkin.IndexedRegions.LOAD
 SkinNames.UiSkin.Styles.Button.SETTINGS_LESS_BTN
 SkinNames.FontsSkin.Fonts.ARIAL_14
 SkinNames.FontsSkin.Colors.RED
 ```
+
+A libGDX `Skin` registers an indexed atlas region such as `load` with `index:1` as `load_1`, so
+`Drawables` contains the names to pass to `Skin#getDrawable`. `IndexedRegions` keeps the base name
+(`load`) for `TextureAtlas#findRegions`.
 
 When the plugin is applied to a project with the `java` plugin, the generated directory is added to
 the `main` source set automatically. When it is applied to the root project, wire it from the Java
@@ -163,6 +180,13 @@ extensions.configure<io.github.elebras1.gdxskinweaver.SkinWeaverExtension>("skin
     packFontPages.set(false)
 }
 ```
+
+Packed pages use the names a libGDX `Skin` looks up: a single-page font keeps the font name as its
+region, while a multi-page font uses `<font>_<page id>` for every page (`chinese_60_0`, `chinese_60_1`, ...).
+
+When `packFontPages` is disabled and a font has the same name as its folder, the atlas page
+(`<folder>.png`) would be loaded as the font texture. The plugin reports a warning; rename the font or
+the folder, or enable `packFontPages`.
 
 Missing page files referenced by a `.fnt` are reported as warnings.
 
@@ -189,7 +213,7 @@ tasks.named('generateSkinReport') {
 When enabled (default), the plugin checks the merged skin against the generated atlas and prints
 warnings for:
 
-- a style that references a missing drawable;
+- a style that references a missing drawable (indexed regions are checked with their `Skin` name, such as `load_1`);
 - a style that references a missing bitmap font or color;
 - a font that references a missing page file;
 - duplicate atlas regions without an animation index;
@@ -223,6 +247,10 @@ For each scanned folder, the plugin writes:
 - `<folder>.atlas` (atlas name matches the folder name, font pages included unless `packFontPages` is disabled).
 - `<folder>.json` (generated or merged).
 - Fonts and font pages copied next to the atlas.
+
+When the assets root is excluded with `""` or `"."`, no atlas or skin is generated for the root itself. Atlas
+or skin files that an older plugin version left at the output root are not deleted automatically; remove them
+once by hand.
 
 ## License
 Apache License. See `LICENSE`.

@@ -14,13 +14,22 @@ import java.util.Set;
 
 public final class AtlasRegionReader {
 
+    /**
+     * Reads the region names as a libGDX {@code Skin} registers them: an indexed region {@code load} with
+     * {@code index:3} is reachable as {@code load_3}. The base names of indexed regions, used with
+     * {@code TextureAtlas#findRegions}, are returned separately.
+     */
     public AtlasRegions read(File atlasFile) throws IOException {
         AtlasLayout layout = readLayout(atlasFile);
         Set<String> names = new LinkedHashSet<>();
+        Set<String> indexedNames = new LinkedHashSet<>();
         for (AtlasRegionData region : layout.regions()) {
-            names.add(region.name());
+            names.add(region.skinName());
+            if (region.index() >= 0) {
+                indexedNames.add(region.name());
+            }
         }
-        return new AtlasRegions(Set.copyOf(names), layout.duplicates());
+        return new AtlasRegions(Set.copyOf(names), Set.copyOf(indexedNames), layout.duplicates());
     }
 
     public AtlasLayout readLayout(File atlasFile) throws IOException {
@@ -138,7 +147,7 @@ public final class AtlasRegionReader {
         }
     }
 
-    public record AtlasRegions(Set<String> names, List<String> duplicates) {
+    public record AtlasRegions(Set<String> names, Set<String> indexedNames, List<String> duplicates) {
     }
 
     public record AtlasLayout(List<PageData> pages, List<AtlasRegionData> regions, List<String> duplicates) {
@@ -149,5 +158,10 @@ public final class AtlasRegionReader {
 
     public record AtlasRegionData(String pageName, String name, int index, int x, int y, int width, int height,
                                   boolean rotate, int[] splits) {
+
+        /** Name under which a libGDX {@code Skin} registers this region. */
+        public String skinName() {
+            return index >= 0 ? name + "_" + index : name;
+        }
     }
 }

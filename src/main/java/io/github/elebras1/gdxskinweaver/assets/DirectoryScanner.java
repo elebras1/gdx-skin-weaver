@@ -44,8 +44,9 @@ public class DirectoryScanner {
         images.sort(Comparator.comparing(File::getName));
 
         FontPageResolver resolver = new FontPageResolver();
-        List<File> fontPages = List.copyOf(resolver.resolve(fonts));
+        List<FontPageResolver.FontPage> fontPageEntries = resolver.resolvePages(fonts);
+        List<File> fontPages = fontPageEntries.stream().map(FontPageResolver.FontPage::file).distinct().toList();
 
-        return new DirectorySnapshot(subdirectories, fonts, fontPages, images, existingSkin);
+        return new DirectorySnapshot(subdirectories, fonts, fontPages, fontPageEntries, images, existingSkin);
     }
 }

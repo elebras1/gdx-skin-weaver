@@ -138,7 +138,7 @@ public class SkinReportGenerator {
                 data.pageUrls.put(page.name(), atlasFile.getParent().resolve(page.name()).toUri().toString());
             }
             for (AtlasRegionData region : layout.regions()) {
-                data.regions.putIfAbsent(region.name(), region);
+                data.regions.putIfAbsent(region.skinName(), region);
             }
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read atlas " + atlasFile, e);
@@ -202,8 +202,10 @@ public class SkinReportGenerator {
             html.append("<div class=\"card\">\n");
             html.append(thumbnail(first, skin, 96));
             html.append("<div class=\"name\">").append(escape(entry.getKey())).append("</div>\n");
-            if (entry.getValue().size() > 1) {
-                html.append("<div class=\"muted\">").append(entry.getValue().size()).append(" frames</div>\n");
+            if (first.index() >= 0) {
+                html.append("<div class=\"muted\">").append(entry.getValue().size())
+                        .append(entry.getValue().size() > 1 ? " frames" : " frame")
+                        .append(", Skin names ").append(escape(entry.getKey())).append("_&lt;index&gt;</div>\n");
             }
             html.append("</div>\n");
         }

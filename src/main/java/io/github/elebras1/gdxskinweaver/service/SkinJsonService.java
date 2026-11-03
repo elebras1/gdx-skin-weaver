@@ -195,6 +195,10 @@ public class SkinJsonService {
         Set<String> colors = resolveLabelColors(availableColors, effectiveConfig);
         String defaultColor = resolveDefaultLabelColor(availableColors, effectiveConfig.defaultLabelColor());
         JsonObject styles = getOrCreateStyles(root, LABEL_STYLE_KEY);
+        Set<String> fontNames = new LinkedHashSet<>();
+        for (File font : fonts) {
+            fontNames.add(AssetFileUtils.getBaseName(font));
+        }
 
         for (File font : fonts) {
             String fontName = AssetFileUtils.getBaseName(font);
@@ -208,6 +212,11 @@ public class SkinJsonService {
 
             for (String color : colors) {
                 String styleName = fontName + "_" + color;
+                if (fontNames.contains(styleName)) {
+                    warn("Label style '" + styleName + "' (font '" + fontName + "' in " + color
+                            + ") is not generated: the font '" + styleName + "' already uses this name.");
+                    continue;
+                }
                 if (styles.get(styleName) != null) {
                     continue;
                 }

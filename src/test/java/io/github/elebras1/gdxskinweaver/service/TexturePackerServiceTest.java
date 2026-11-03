@@ -83,6 +83,18 @@ class TexturePackerServiceTest {
         assertEquals(Set.of("folder12.png"), fileNames(targetDir));
     }
 
+    @Test
+    void cleanKeepsPreservedFontPagesNamedLikeAtlasPages() throws IOException {
+        Path targetDir = Files.createDirectories(tempDir.resolve("target"));
+        for (String name : List.of("title.atlas", "title.png", "title1.png", "title2.png", "title3.png")) {
+            Files.writeString(targetDir.resolve(name), "");
+        }
+
+        new TexturePackerService().clean(targetDir.toFile(), "title", Map.of(), Set.of("title1.png", "title2.png"));
+
+        assertEquals(Set.of("title1.png", "title2.png"), fileNames(targetDir));
+    }
+
     private static java.io.File writePng(Path dir, String name) throws IOException {
         BufferedImage image = new BufferedImage(20, 20, BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics = image.createGraphics();

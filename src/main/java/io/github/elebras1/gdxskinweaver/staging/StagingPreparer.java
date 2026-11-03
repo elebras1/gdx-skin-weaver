@@ -22,6 +22,15 @@ public class StagingPreparer {
     private final ImageContrastAdjuster contrastAdjuster = new ImageContrastAdjuster();
 
     public StagingResult prepare(File sourceDir, File stagingRoot, Path assetsRoot, List<File> excludedImages) {
+        return prepare(sourceDir, stagingRoot, assetsRoot, excludedImages, Map.of());
+    }
+
+    /**
+     * @param renamedImages images staged under the given region names instead of their own file name, such as
+     *                      font pages that must be found by a libGDX {@code Skin} under the font name
+     */
+    public StagingResult prepare(File sourceDir, File stagingRoot, Path assetsRoot, List<File> excludedImages,
+                                 Map<File, List<String>> renamedImages) {
         StagedImages staged = new StagedImages();
         Map<String, String> buttonStyles = new LinkedHashMap<>();
         Map<String, String> toggleStyles = new LinkedHashMap<>();
@@ -39,6 +48,7 @@ public class StagingPreparer {
         List<File> images = new ArrayList<>(Arrays.asList(listedImages));
         images.sort(Comparator.comparing(File::getName));
         images.removeIf(file -> excludedPaths.contains(file.toPath().toAbsolutePath().normalize()));
+        images.removeIf(file -> stageRenamed(file, renamedImages, stagingRoot, assetsRoot, staged));
         images = deduplicate(images);
 
         Map<String, Map<String, File>> groups = new LinkedHashMap<>();
@@ -85,6 +95,23 @@ public class StagingPreparer {
         }
 
         return new StagingResult(staged.list(), buttonStyles, toggleStyles);
+    }
+
+    private boolean stageRenamed(File file, Map<File, List<String>> renamedImages, File stagingRoot, Path assetsRoot,
+                                 StagedImages staged) {
+        Path path = file.toPath().toAbsolutePath().normalize();
+        for (Map.Entry<File, List<String>> entry : renamedImages.entrySet()) {
+            if (!entry.getKey().toPath().toAbsolutePath().normalize().equals(path)) {
+                continue;
+            }
+            for (String regionName : entry.getValue()) {
+                File target = stagingFileForVariant(file, stagingRoot, assetsRoot, regionName);
+                copyFile(file, target);
+                staged.add(target);
+            }
+            return true;
+        }
+        return false;
     }
 
     private List<File> deduplicate(List<File> images) {

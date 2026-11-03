@@ -2,12 +2,15 @@ package io.github.elebras1.gdxskinweaver;
 
 import io.github.elebras1.gdxskinweaver.report.SkinReportTask;
 import io.github.elebras1.gdxskinweaver.task.GdxSkinWeaverTask;
+import io.github.elebras1.gdxskinweaver.util.SkinWeaverPaths;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.Delete;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskProvider;
+
+import java.io.File;
 
 public class GdxSkinWeaver implements Plugin<Project> {
     @Override
@@ -63,7 +66,11 @@ public class GdxSkinWeaver implements Plugin<Project> {
             reportTask.getAtlasExtension().set(extension.getPacker().getAtlasExtension());
             reportTask.dependsOn(taskProvider);
 
-            cleanTaskProvider.get().delete(skinWeaverTask.getOutputDir().get().getAsFile());
+            File assetsDir = skinWeaverTask.getAssetsDir().get().getAsFile();
+            File outputDir = skinWeaverTask.getOutputDir().get().getAsFile();
+            Delete cleanTask = cleanTaskProvider.get();
+            cleanTask.delete(outputDir);
+            cleanTask.doFirst(task -> SkinWeaverPaths.requireSafeOutputDir(assetsDir, outputDir));
 
             if (extension.getNames().getEnabled().get() && p.getPluginManager().hasPlugin("java")) {
                 SourceSetContainer sourceSets = p.getExtensions().findByType(SourceSetContainer.class);

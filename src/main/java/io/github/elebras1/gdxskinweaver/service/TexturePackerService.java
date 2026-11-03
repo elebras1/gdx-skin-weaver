@@ -6,6 +6,7 @@ import com.badlogic.gdx.tools.texturepacker.TexturePacker;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 public class TexturePackerService {
@@ -15,8 +16,17 @@ public class TexturePackerService {
     }
 
     public void pack(File sourceDir, File targetDir, String atlasName, List<File> images, Map<String, String> options) {
+        pack(sourceDir, targetDir, atlasName, images, options, Set.of());
+    }
+
+    /**
+     * @param preservedFiles names of files in {@code targetDir} that must survive the cleanup even when they look
+     *                       like atlas pages, such as font pages copied next to the atlas.
+     */
+    public void pack(File sourceDir, File targetDir, String atlasName, List<File> images, Map<String, String> options,
+                     Set<String> preservedFiles) {
         TexturePacker.Settings settings = createSettings(options);
-        cleanPreviousPack(targetDir, atlasName, settings);
+        cleanPreviousPack(targetDir, atlasName, settings, preservedFiles);
         TexturePacker packer = new TexturePacker(sourceDir, settings);
         for (File img : images) {
             packer.addImage(img);
@@ -25,10 +35,15 @@ public class TexturePackerService {
     }
 
     public void clean(File targetDir, String atlasName, Map<String, String> options) {
-        cleanPreviousPack(targetDir, atlasName, createSettings(options));
+        clean(targetDir, atlasName, options, Set.of());
     }
 
-    private void cleanPreviousPack(File targetDir, String atlasName, TexturePacker.Settings settings) {
+    public void clean(File targetDir, String atlasName, Map<String, String> options, Set<String> preservedFiles) {
+        cleanPreviousPack(targetDir, atlasName, createSettings(options), preservedFiles);
+    }
+
+    private void cleanPreviousPack(File targetDir, String atlasName, TexturePacker.Settings settings,
+                                   Set<String> preservedFiles) {
         String atlasExtension = settings.atlasExtension == null || settings.atlasExtension.isBlank()
                 ? ".atlas" : settings.atlasExtension;
         deleteQuietly(new File(targetDir, atlasName + atlasExtension));
@@ -36,7 +51,7 @@ public class TexturePackerService {
         String pageSuffix = pageSuffixPattern(atlasName);
         for (String imageExtension : List.of(".png", ".jpg", ".jpeg", ".cbt")) {
             String pattern = Pattern.quote(atlasName) + pageSuffix + Pattern.quote(imageExtension);
-            File[] pages = targetDir.listFiles((dir, name) -> name.matches(pattern));
+            File[] pages = targetDir.listFiles((dir, name) -> name.matches(pattern) && !preservedFiles.contains(name));
             if (pages != null) {
                 for (File page : pages) {
                     deleteQuietly(page);
