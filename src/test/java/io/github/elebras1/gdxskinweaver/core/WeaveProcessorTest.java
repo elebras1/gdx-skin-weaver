@@ -125,6 +125,42 @@ class WeaveProcessorTest {
         assertFalse(regions.names().contains("shared"));
     }
 
+    @Test
+    void removesPackedFontPageCopiesWhenTheirCopyIsDisabled() throws IOException {
+        Path assets = Files.createDirectories(tempDir.resolve("assets"));
+        Path fonts = Files.createDirectories(assets.resolve("fonts"));
+        writePng(fonts.resolve("raw.png"));
+        writeFont(fonts.resolve("arial_17.fnt"), "raw.png");
+        Path output = tempDir.resolve("out");
+        Files.createDirectories(output.resolve("fonts"));
+        writePng(output.resolve("fonts/raw.png"));
+
+        processor().process(assets.toFile(), context(assets, output, true, false));
+
+        assertTrue(Files.exists(output.resolve("fonts/arial_17.fnt")));
+        assertFalse(Files.exists(output.resolve("fonts/raw.png")));
+        assertTrue(new AtlasRegionReader().read(output.resolve("fonts/fonts.atlas").toFile()).names()
+                .contains("arial_17"));
+    }
+
+    @Test
+    void copiesFontPagesThatAreNotPackedEvenWhenPackedCopiesAreDisabled() throws IOException {
+        Path assets = Files.createDirectories(tempDir.resolve("assets"));
+        Path fonts = Files.createDirectories(assets.resolve("fonts"));
+        writePng(fonts.resolve("raw.png"));
+        writeFont(fonts.resolve("arial_17.fnt"), "raw.png");
+        Path output = tempDir.resolve("out");
+
+        processor().process(assets.toFile(), context(assets, output, false, false));
+
+        assertTrue(Files.exists(output.resolve("fonts/raw.png")));
+    }
+
+    private WeaveContext context(Path assets, Path output, boolean packFontPages, boolean copyPackedFontPages) {
+        return new WeaveContext(assets, output.toFile(), Set.of(), tempDir.resolve("staging").toFile(), Map.of(),
+                packFontPages, copyPackedFontPages, SkinGenerationConfig.defaults());
+    }
+
     private WeaveProcessor processor() {
         return new WeaveProcessor(new DirectoryScanner(), new StagingPreparer(), new FontPageCopier(),
                 new TexturePackerService(), new SkinFileHandler(new SkinJsonService()), new SkinValidator());

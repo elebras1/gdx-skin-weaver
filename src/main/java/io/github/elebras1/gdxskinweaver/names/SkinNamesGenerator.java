@@ -100,6 +100,7 @@ public class SkinNamesGenerator {
             SkinModel model = new SkinModel(baseName, skinPath);
             readResources(root, model);
             readAtlas(skinFile, atlasExtension, model);
+            removeFontPages(model);
 
             if (!model.isEmpty()) {
                 models.add(model);
@@ -161,6 +162,25 @@ public class SkinNamesGenerator {
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read atlas " + atlasFile, e);
         }
+    }
+
+    /**
+     * A libGDX {@code Skin} loads a font page from the region named like the font ({@code <font>} for a single page,
+     * {@code <font>_<page id>} for several pages). Those regions are listed under {@code Fonts}, not as drawables.
+     */
+    private void removeFontPages(SkinModel model) {
+        for (String font : model.fonts) {
+            model.drawables.remove(font);
+            if (model.indexedRegions.remove(font)) {
+                model.drawables.removeIf(region -> isPageOf(region, font));
+            }
+        }
+    }
+
+    private boolean isPageOf(String region, String font) {
+        String prefix = font + "_";
+        return region.length() > prefix.length() && region.startsWith(prefix)
+                && region.substring(prefix.length()).chars().allMatch(Character::isDigit);
     }
 
     private String uniqueName(String baseName, Set<String> usedNames) {

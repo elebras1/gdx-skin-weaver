@@ -55,8 +55,12 @@ public class WeaveProcessor {
         DirectorySnapshot snapshot = directoryScanner.scan(dir);
         processSubdirectories(snapshot, context);
 
-        fontPageCopier.copy(dir, context.outputDir(), context.assetsRoot(), snapshot.fonts(), snapshot.fontPages());
-        Set<String> copiedFontPages = snapshot.fontPages().stream().map(File::getName).collect(Collectors.toSet());
+        List<File> copiedPages = context.copyFontPages() ? snapshot.fontPages() : List.of();
+        fontPageCopier.copy(dir, context.outputDir(), context.assetsRoot(), snapshot.fonts(), copiedPages);
+        if (!context.copyFontPages()) {
+            fontPageCopier.removeCopies(context.outputDir(), context.assetsRoot(), snapshot.fontPages());
+        }
+        Set<String> copiedFontPages = copiedPages.stream().map(File::getName).collect(Collectors.toSet());
 
         String atlasName = dir.getName().isEmpty() ? "pack" : dir.getName();
         File targetDir = AssetFileUtils.getOutputDirectory(dir, context.outputDir(), context.assetsRoot());

@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -207,6 +208,54 @@ class SkinNamesGeneratorTest {
         assertTrue(source.contains("public static final String LOAD_2 = \"load_2\";"));
         assertTrue(source.contains("public static final class IndexedRegions"));
         assertTrue(source.contains("public static final String LOAD = \"load\";"));
+    }
+
+    @Test
+    void listsFontPagesUnderFontsOnly() throws IOException {
+        Path skins = tempDir.resolve("skins");
+        write(skins.resolve("fonts/fonts.json"), """
+                {
+                  "com.badlogic.gdx.graphics.g2d.BitmapFont": {
+                    "arial_17": {"file": "arial_17.fnt"},
+                    "chinese_60": {"file": "chinese_60.fnt"}
+                  }
+                }
+                """);
+        write(skins.resolve("fonts/fonts.atlas"), """
+                fonts.png
+                size:64,64
+                format:RGBA8888
+                filter:Nearest,Nearest
+                repeat:none
+
+                arial_17
+                bounds:0,0,10,10
+
+                chinese_60
+                index:0
+                bounds:10,0,10,10
+
+                chinese_60
+                index:1
+                bounds:20,0,10,10
+
+                icon
+                bounds:30,0,10,10
+                """);
+        Path out = tempDir.resolve("out");
+
+        new SkinNamesGenerator().generate(skins.toFile(), out.toFile(), "com.example.ui", "SkinNames", ".atlas");
+
+        String source = Files.readString(out.resolve("com/example/ui/SkinNames.java"));
+        assertTrue(source.contains("public static final String ICON = \"icon\";"));
+        assertEquals(1, occurrences(source, "public static final String ARIAL_17 = "));
+        assertEquals(1, occurrences(source, "public static final String CHINESE_60 = "));
+        assertFalse(source.contains("CHINESE_60_0"));
+        assertFalse(source.contains("IndexedRegions"));
+    }
+
+    private int occurrences(String source, String text) {
+        return source.split(java.util.regex.Pattern.quote(text), -1).length - 1;
     }
 
     private void write(Path path, String content) throws IOException {

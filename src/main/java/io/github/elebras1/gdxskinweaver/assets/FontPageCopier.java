@@ -20,12 +20,27 @@ public class FontPageCopier {
         }
 
         for (File page : fontPages) {
-            Path pagePath = page.toPath().toAbsolutePath().normalize();
-            Path assetsPath = assetsRoot.toAbsolutePath().normalize();
-            Path relative = pagePath.startsWith(assetsPath) ? assetsPath.relativize(pagePath) : Path.of(page.getName());
-            File targetFile = outputRoot.toPath().resolve(relative).toFile();
-            copyFile(page, targetFile, "font page");
+            copyFile(page, pageTarget(page, outputRoot, assetsRoot), "font page");
         }
+    }
+
+    /** Removes font page images copied by a previous run, when they are no longer copied. */
+    public void removeCopies(File outputRoot, Path assetsRoot, List<File> fontPages) {
+        for (File page : fontPages) {
+            File target = pageTarget(page, outputRoot, assetsRoot);
+            try {
+                Files.deleteIfExists(target.toPath());
+            } catch (IOException e) {
+                System.err.println("Failed to delete font page " + target.getName() + ": " + e.getMessage());
+            }
+        }
+    }
+
+    private File pageTarget(File page, File outputRoot, Path assetsRoot) {
+        Path pagePath = page.toPath().toAbsolutePath().normalize();
+        Path assetsPath = assetsRoot.toAbsolutePath().normalize();
+        Path relative = pagePath.startsWith(assetsPath) ? assetsPath.relativize(pagePath) : Path.of(page.getName());
+        return outputRoot.toPath().resolve(relative).toFile();
     }
 
     private void copyFile(File source, File target, String label) {

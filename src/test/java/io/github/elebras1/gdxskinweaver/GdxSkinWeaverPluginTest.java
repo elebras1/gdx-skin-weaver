@@ -79,6 +79,39 @@ class GdxSkinWeaverPluginTest {
         assertTrue(source.contains("public static final String UI = \"skins/ui/ui.json\";"));
     }
 
+    @Test
+    void usesConfiguredSkinCatalogPrefixForOutputOutsideAssets() throws IOException {
+        Files.writeString(projectDir.resolve("settings.gradle"), "rootProject.name = 'skin-weaver-prefix'\n");
+        Path skin = projectDir.resolve("assets/ui/ui_skin.json");
+        Files.createDirectories(skin.getParent());
+        Files.writeString(skin, """
+                {
+                  "com.badlogic.gdx.scenes.scene2d.ui.Button$ButtonStyle": {
+                    "ok_btn": {"up": "ok_btn"}
+                  }
+                }
+                """);
+        Files.writeString(projectDir.resolve("build.gradle"), """
+                plugins { id 'io.github.elebras1.gdx-skin-weaver' }
+                skinWeaver {
+                    outputDir.set(layout.buildDirectory.dir("skin-resources/generated-skins"))
+                    names.skinCatalog.set(true)
+                    names.skinCatalogPrefix.set("generated-skins")
+                }
+                """);
+
+        GradleRunner.create()
+                .withProjectDir(projectDir.toFile())
+                .withArguments("weaveSkins")
+                .withPluginClasspath()
+                .build();
+
+        assertTrue(Files.exists(projectDir.resolve("build/skin-resources/generated-skins/ui/ui.json")));
+        String source = Files.readString(projectDir.resolve(
+                "build/generated/sources/skinWeaver/java/io/github/elebras1/gdxskinweaver/generated/SkinNames.java"));
+        assertTrue(source.contains("public static final String UI = \"generated-skins/ui/ui.json\";"), source);
+    }
+
     private void assertOutputDirGuard(String task, String outputExpression) throws IOException {
         writeBuild(outputExpression);
 

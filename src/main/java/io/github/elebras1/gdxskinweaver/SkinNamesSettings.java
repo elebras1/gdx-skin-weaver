@@ -13,6 +13,7 @@ public abstract class SkinNamesSettings {
     private final Property<String> packageName;
     private final Property<String> className;
     private final Property<Boolean> skinCatalog;
+    private final Property<String> skinCatalogPrefix;
 
     @Inject
     public SkinNamesSettings(ObjectFactory objects) {
@@ -21,6 +22,7 @@ public abstract class SkinNamesSettings {
         this.packageName = objects.property(String.class).convention("io.github.elebras1.gdxskinweaver.generated");
         this.className = objects.property(String.class).convention("SkinNames");
         this.skinCatalog = objects.property(Boolean.class).convention(false);
+        this.skinCatalogPrefix = objects.property(String.class);
     }
 
     public Property<Boolean> getEnabled() {
@@ -41,5 +43,9 @@ public abstract class SkinNamesSettings {
 
     public Property<Boolean> getSkinCatalog() {
         return skinCatalog;
+    }
+
+    public Property<String> getSkinCatalogPrefix() {
+        return skinCatalogPrefix;
     }
 }

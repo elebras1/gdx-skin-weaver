@@ -23,6 +23,7 @@ import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
@@ -92,6 +93,9 @@ public abstract class GdxSkinWeaverTask extends DefaultTask {
     public abstract Property<Boolean> getPackFontPages();
 
     @Input
+    public abstract Property<Boolean> getCopyPackedFontPages();
+
+    @Input
     public abstract Property<Boolean> getGenerateNames();
 
     @Input
@@ -102,6 +106,10 @@ public abstract class GdxSkinWeaverTask extends DefaultTask {
 
     @Input
     public abstract Property<Boolean> getSkinCatalog();
+
+    @Input
+    @Optional
+    public abstract Property<String> getSkinCatalogPrefix();
 
     @OutputDirectory
     public abstract DirectoryProperty getNamesOutputDir();
@@ -121,6 +129,7 @@ public abstract class GdxSkinWeaverTask extends DefaultTask {
         getDefaultLabelColor().convention("");
         getValidateSkins().convention(true);
         getPackFontPages().convention(true);
+        getCopyPackedFontPages().convention(true);
         getGenerateNames().convention(true);
         getNamesPackage().convention("io.github.elebras1.gdxskinweaver.generated");
         getNamesClassName().convention("SkinNames");
@@ -149,14 +158,17 @@ public abstract class GdxSkinWeaverTask extends DefaultTask {
         );
 
         WeaveContext context = new WeaveContext(assetsRoot, outputDir, excludedDirsWithOutput, getTemporaryDir(),
-                this.getPackerOptions().get(), this.getPackFontPages().get(), skinGenerationConfig);
+                this.getPackerOptions().get(), this.getPackFontPages().get(), this.getCopyPackedFontPages().get(),
+                skinGenerationConfig);
         weaveProcessor.process(assetsDir, context);
 
         if (this.getGenerateNames().get()) {
             this.skinNamesGenerator.generate(outputDir, this.getNamesOutputDir().get().getAsFile(),
                     this.getNamesPackage().get(), this.getNamesClassName().get(),
                     this.getPackerOptions().get().getOrDefault("atlasExtension", ".atlas"),
-                    this.getSkinCatalog().get(), skinCatalogPrefix(assetsDir, outputDir));
+                    this.getSkinCatalog().get(), this.getSkinCatalogPrefix().isPresent()
+                            ? this.getSkinCatalogPrefix().get()
+                            : skinCatalogPrefix(assetsDir, outputDir));
         } else {
             this.skinNamesGenerator.clean(this.getNamesOutputDir().get().getAsFile(),
                     this.getNamesPackage().get(), this.getNamesClassName().get());
@@ -165,7 +177,8 @@ public abstract class GdxSkinWeaverTask extends DefaultTask {
 
     /**
      * Catalog paths are relative to the assets directory when the skins output directory is inside it, so they
-     * can be passed directly to {@code Gdx.files.internal}. Otherwise they stay relative to the output directory.
+     * can be passed directly to {@code Gdx.files.internal}. Otherwise they stay relative to the output directory,
+     * unless {@code names.skinCatalogPrefix} is set.
      */
     private String skinCatalogPrefix(File assetsDir, File outputDir) {
         Path assets = assetsDir.toPath().toAbsolutePath().normalize();

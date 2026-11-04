@@ -14,6 +14,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -66,6 +67,23 @@ class StagingPreparerTest {
 
         assertEquals(Set.of("bar_btn.png", "bar_btn_down.png", "bar_btn_over.png"), fileNameSet(result));
         assertTrue(result.buttonSimpleToFull().containsKey("bar_btn"));
+    }
+
+    @Test
+    void keepsButtonStylesInFileNameOrder() throws IOException {
+        Path assetsRoot = tempDir.resolve("assets");
+        Path sourceDir = assetsRoot.resolve("ui");
+        Files.createDirectories(sourceDir);
+        List<String> expected = new ArrayList<>();
+        for (int i = 0; i < 20; i++) {
+            String name = "button%02d_btn".formatted(i);
+            writePng(sourceDir, name + ".png");
+            expected.add(name);
+        }
+
+        StagingPreparer.StagingResult result = prepare(assetsRoot, sourceDir);
+
+        assertEquals(expected, List.copyOf(result.buttonSimpleToFull().keySet()));
     }
 
     @Test

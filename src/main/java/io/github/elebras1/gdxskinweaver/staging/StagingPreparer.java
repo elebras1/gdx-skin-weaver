@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -287,8 +288,13 @@ public class StagingPreparer {
     public record StagingResult(List<File> images, Map<String, String> buttonSimpleToFull, Map<String, String> toggleSimpleToFull) {
         public StagingResult {
             images = images == null ? List.of() : List.copyOf(images);
-            buttonSimpleToFull = buttonSimpleToFull == null ? Map.of() : Map.copyOf(buttonSimpleToFull);
-            toggleSimpleToFull = toggleSimpleToFull == null ? Map.of() : Map.copyOf(toggleSimpleToFull);
+            buttonSimpleToFull = orderedCopy(buttonSimpleToFull);
+            toggleSimpleToFull = orderedCopy(toggleSimpleToFull);
+        }
+
+        /** Keeps the staging order, so generated styles are written in the same order on every run. */
+        private static Map<String, String> orderedCopy(Map<String, String> styles) {
+            return styles == null ? Map.of() : Collections.unmodifiableMap(new LinkedHashMap<>(styles));
         }
     }
 

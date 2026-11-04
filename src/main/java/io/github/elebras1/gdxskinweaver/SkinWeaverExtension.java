@@ -20,6 +20,7 @@ public abstract class SkinWeaverExtension {
     private final Property<String> defaultLabelColor;
     private final Property<Boolean> validateSkins;
     private final Property<Boolean> packFontPages;
+    private final Property<Boolean> copyPackedFontPages;
 
     @Inject
     public SkinWeaverExtension(ObjectFactory objects) {
@@ -33,6 +34,7 @@ public abstract class SkinWeaverExtension {
         this.defaultLabelColor = objects.property(String.class).convention("");
         this.validateSkins = objects.property(Boolean.class).convention(true);
         this.packFontPages = objects.property(Boolean.class).convention(true);
+        this.copyPackedFontPages = objects.property(Boolean.class).convention(true);
     }
 
     public DirectoryProperty getAssetsDir() {
@@ -73,5 +75,9 @@ public abstract class SkinWeaverExtension {
 
     public Property<Boolean> getPackFontPages() {
         return packFontPages;
+    }
+
+    public Property<Boolean> getCopyPackedFontPages() {
+        return copyPackedFontPages;
     }
 }

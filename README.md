@@ -12,9 +12,10 @@ Gradle plugin that packs libGDX texture atlases and generates skin JSON from ass
 - Detects duplicate region names and prefers the nine-patch version of an image.
 - Validates hand-written skin JSON and reports missing drawables, fonts, colors and duplicate atlas regions.
 - Exposes the texture packer settings (page size, padding, filters, ...).
-- Can keep font page images out of the folder atlas.
+- Can keep font page images out of the folder atlas, or stop copying the page images it packs.
 - Generates an HTML preview report of drawables, styles, fonts and colors.
-- Can generate a catalog of all skin JSON paths (disabled by default).
+- Can generate a catalog of all skin JSON paths (disabled by default), with a configurable path prefix.
+- Writes generated styles in the same order on every run.
 - Keeps the output directory out of the task inputs so `weaveSkins` can be up-to-date.
 - Excludes the configured `excludedDirs` from the task inputs.
 - Supports the Gradle build cache for `weaveSkins`.
@@ -163,6 +164,9 @@ A libGDX `Skin` registers an indexed atlas region such as `load` with `index:1` 
 `Drawables` contains the names to pass to `Skin#getDrawable`. `IndexedRegions` keeps the base name
 (`load`) for `TextureAtlas#findRegions`.
 
+Packed font pages are listed under `Fonts` only: the regions a `Skin` uses as font textures (`arial_14`,
+`chinese_60_0`, `chinese_60_1`, ...) do not appear in `Drawables` or `IndexedRegions`.
+
 When the plugin is applied to a project with the `java` plugin, the generated directory is added to
 the `main` source set automatically. When it is applied to the root project, wire it from the Java
 module:
@@ -190,6 +194,24 @@ SkinNames.Skins.UI_ECONOMY // "skins/ui/economy/economy.json"
 Skins without any generated resource are not listed. The catalog only contains plain `String` constants;
 there is no generated `ALL` collection.
 
+When the skins are generated outside the assets directory, for example under `build/` and added as a resources
+directory, set the prefix the game uses to load them. It replaces the computed prefix; `""` removes it.
+
+```groovy
+skinWeaver {
+    outputDir.set(layout.buildDirectory.dir('generated/skinWeaver/resources/skins'))
+    names.skinCatalog.set(true)
+    names.skinCatalogPrefix.set('skins')
+}
+
+sourceSets.main.resources.srcDir(layout.buildDirectory.dir('generated/skinWeaver/resources'))
+processResources.dependsOn(tasks.named('weaveSkins'))
+```
+
+```java
+SkinNames.Skins.UI // "skins/ui/ui.json", loaded from the classpath
+```
+
 ### Font pages
 By default, font page images are packed into the folder atlas. When the atlas is not used for
 fonts, disable that packing and let the plugin only copy the `.fnt` files and their pages:
@@ -197,6 +219,16 @@ fonts, disable that packing and let the plugin only copy the `.fnt` files and th
 ```kotlin
 extensions.configure<io.github.elebras1.gdxskinweaver.SkinWeaverExtension>("skinWeaver") {
     packFontPages.set(false)
+}
+```
+
+A `Skin` loads packed pages from the atlas, so the page images copied next to the `.fnt` files are only needed
+when a font is loaded without the skin, such as `new BitmapFont(file)`. Their copy can be disabled; copies left
+by a previous run are then removed. Pages are always copied when `packFontPages` is disabled.
+
+```kotlin
+extensions.configure<io.github.elebras1.gdxskinweaver.SkinWeaverExtension>("skinWeaver") {
+    copyPackedFontPages.set(false)
 }
 ```
 
@@ -270,7 +302,7 @@ extensions.configure<io.github.elebras1.gdxskinweaver.SkinWeaverExtension>("skin
 For each scanned folder, the plugin writes:
 - `<folder>.atlas` (atlas name matches the folder name, font pages included unless `packFontPages` is disabled).
 - `<folder>.json` (generated or merged).
-- Fonts and font pages copied next to the atlas.
+- Fonts and font pages copied next to the atlas (pages are skipped when `copyPackedFontPages` is disabled).
 
 When the assets root is excluded with `""` or `"."`, no atlas or skin is generated for the root itself. Atlas
 or skin files that an older plugin version left at the output root are not deleted automatically; remove them

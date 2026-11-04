@@ -45,10 +45,12 @@ public class GdxSkinWeaver implements Plugin<Project> {
             skinWeaverTask.getDefaultLabelColor().set(extension.getDefaultLabelColor());
             skinWeaverTask.getValidateSkins().set(extension.getValidateSkins());
             skinWeaverTask.getPackFontPages().set(extension.getPackFontPages());
+            skinWeaverTask.getCopyPackedFontPages().set(extension.getCopyPackedFontPages());
             skinWeaverTask.getGenerateNames().set(extension.getNames().getEnabled());
             skinWeaverTask.getNamesPackage().set(extension.getNames().getPackageName());
             skinWeaverTask.getNamesClassName().set(extension.getNames().getClassName());
             skinWeaverTask.getSkinCatalog().set(extension.getNames().getSkinCatalog());
+            skinWeaverTask.getSkinCatalogPrefix().set(extension.getNames().getSkinCatalogPrefix());
 
             if (!extension.getNames().getOutputDir().isPresent()) {
                 extension.getNames().getOutputDir().set(p.getLayout().getBuildDirectory().dir("generated/sources/skinWeaver/java"));
